@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Play, Clock, Star, Filter } from 'lucide-react';
+import { Search, Play, Clock, Star, Filter, Database } from 'lucide-react';
 import { useTwelveLabs } from '@/lib/hooks/useTwelveLabs';
+import { IndexSelector } from '@/components/IndexSelector';
+import Link from 'next/link';
 
 interface SearchResult {
   id: string;
@@ -23,14 +25,15 @@ export default function SearchPage() {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [selectedOptions, setSelectedOptions] = useState(['visual', 'audio']);
   const [sortBy, setSortBy] = useState<'relevance' | 'duration'>('relevance');
+  const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
 
   const { loading, error, searchVideos } = useTwelveLabs();
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim() || !selectedIndex) return;
 
     try {
-      const results = await searchVideos(searchQuery, selectedOptions);
+      const results = await searchVideos(searchQuery, selectedOptions, selectedIndex);
       setSearchResults(results.results);
       
       // Add to search history
@@ -92,9 +95,37 @@ export default function SearchPage() {
           </p>
         </div>
 
-        {/* Search Interface */}
+        {/* Index Selection */}
         <div className="mb-8">
-          <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <div className="max-w-md mx-auto">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Index *
+            </label>
+            <IndexSelector
+              selectedIndex={selectedIndex}
+              onIndexSelect={setSelectedIndex}
+              className="w-full"
+              placeholder="Choose an index to search..."
+            />
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <p className="text-gray-500 dark:text-gray-400">
+                Search will be performed within the selected index
+              </p>
+              <Link
+                href="/indexes"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
+              >
+                <Database className="h-4 w-4" />
+                Manage Indexes
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Interface */}
+        {selectedIndex && (
+          <div className="mb-8">
+            <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
             {/* Search Input */}
             <div className="flex gap-3 mb-4">
               <div className="flex-1 relative">
@@ -110,7 +141,7 @@ export default function SearchPage() {
               </div>
               <button
                 onClick={handleSearch}
-                disabled={loading || !searchQuery.trim()}
+                disabled={loading || !searchQuery.trim() || !selectedIndex}
                 className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Searching...' : 'Search'}
@@ -166,10 +197,11 @@ export default function SearchPage() {
               </select>
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Example Queries */}
-        {searchResults.length === 0 && !loading && (
+        {selectedIndex && searchResults.length === 0 && !loading && (
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Try these example searches:
@@ -220,21 +252,37 @@ export default function SearchPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedResults.map((result, idx) => (
                 <div
-                  key={result.id}
+                  key={`${result.id}-${idx}`}
                   className="relative overflow-hidden rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-lg transition-all group"
                 >
-                  {/* Thumbnail Placeholder */}
-                  <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
-                    <Play className="h-12 w-12 text-gray-500 group-hover:text-gray-700 transition-colors" />
+                  {/* Thumbnail */}
+                  <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center overflow-hidden">
+                    {result.thumbnailUrl ? (
+                      <img 
+                        src={result.thumbnailUrl}
+                        alt={result.metadata?.filename || 'Video thumbnail'}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full flex items-center justify-center ${result.thumbnailUrl ? 'hidden' : 'flex'}`}>
+                      <Play className="h-12 w-12 text-gray-500 group-hover:text-gray-700 transition-colors" />
+                    </div>
                     <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
                       {formatTime(result.end - result.start)}
+                    </div>
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <Play className="h-8 w-8 text-white" />
                     </div>
                   </div>
 
                   {/* Content */}
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2 truncate">
-                      {result.metadata.filename}
+                      {result.metadata?.filename || 'Unknown Video'}
                     </h3>
                     
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -248,7 +296,7 @@ export default function SearchPage() {
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-500" />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {(result.score * 100).toFixed(1)}%
+                          {result.score.toFixed(1)}%
                         </span>
                       </div>
                       

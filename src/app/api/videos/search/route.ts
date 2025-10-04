@@ -36,14 +36,28 @@ export async function POST(request: NextRequest) {
       pageLimit: 10,
     });
 
-    const formattedResults = searchResults.data?.map((result) => ({
-      id: result.id,
-      score: result.score,
-      start: result.start,
-      end: result.end,
-      metadata: result.metadata,
-      thumbnailUrl: result.thumbnailUrl,
-    }));
+    console.log('Raw search results:', JSON.stringify(searchResults, null, 2));
+    console.log('Search results data length:', searchResults.data?.length);
+
+    const formattedResults = searchResults.data?.map((result) => {
+      console.log('Processing search result:', JSON.stringify(result, null, 2));
+      return {
+        id: result.id || result.videoId,
+        score: result.score,
+        start: result.start,
+        end: result.end,
+        metadata: {
+          video_id: result.videoId,
+          filename: result.filename || `Video ${result.videoId}`,
+          duration: result.end - result.start,
+          transcription: result.transcription,
+          confidence: result.confidence
+        },
+        thumbnailUrl: result.thumbnailUrl,
+      };
+    });
+
+    console.log('Formatted search results:', JSON.stringify(formattedResults, null, 2));
 
     return NextResponse.json({
       results: formattedResults || [],

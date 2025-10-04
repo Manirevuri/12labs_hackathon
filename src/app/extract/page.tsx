@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Film, Download, Filter, Play, Clock, Star, Settings } from 'lucide-react';
+import { Film, Download, Filter, Play, Clock, Star, Settings, Database } from 'lucide-react';
 import { useTwelveLabs } from '@/lib/hooks/useTwelveLabs';
+import { IndexSelector } from '@/components/IndexSelector';
+import Link from 'next/link';
 
 interface ExtractedMoment {
   id: string;
@@ -30,16 +32,20 @@ export default function ExtractPage() {
   const [confidence, setConfidence] = useState(0.7);
   const [groupedMoments, setGroupedMoments] = useState<Record<string, ExtractedMoment[]>>({});
   const [useCustomQuery, setUseCustomQuery] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
 
   const { loading, error, extractMoments, listVideos } = useTwelveLabs();
 
   useEffect(() => {
-    loadVideos();
-  }, []);
+    if (selectedIndex) {
+      loadVideos();
+    }
+  }, [selectedIndex]);
 
   const loadVideos = async () => {
+    if (!selectedIndex) return;
     try {
-      const videoData = await listVideos();
+      const videoData = await listVideos(selectedIndex);
       setVideos(videoData.videos || []);
     } catch (err) {
       console.error('Failed to load videos:', err);
@@ -81,14 +87,15 @@ export default function ExtractPage() {
 
   const handleExtract = async () => {
     const query = useCustomQuery ? customQuery : selectedMomentType;
-    if (!query) return;
+    if (!query || !selectedIndex) return;
 
     try {
       const results = await extractMoments(
         useCustomQuery ? undefined : selectedMomentType,
         useCustomQuery ? customQuery : undefined,
         selectedVideos.length > 0 ? selectedVideos : undefined,
-        confidence
+        confidence,
+        selectedIndex
       );
       
       setExtractedMoments(results.moments);
@@ -151,11 +158,39 @@ export default function ExtractPage() {
           </p>
         </div>
 
+        {/* Index Selection */}
+        <div className="mb-8">
+          <div className="max-w-md mx-auto">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Index *
+            </label>
+            <IndexSelector
+              selectedIndex={selectedIndex}
+              onIndexSelect={setSelectedIndex}
+              className="w-full"
+              placeholder="Choose an index to extract from..."
+            />
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <p className="text-gray-500 dark:text-gray-400">
+                Moments will be extracted from videos in the selected index
+              </p>
+              <Link
+                href="/indexes"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
+              >
+                <Database className="h-4 w-4" />
+                Manage Indexes
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* Extraction Interface */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Configuration Panel */}
-          <div className="lg:col-span-1">
-            <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6 space-y-6">
+        {selectedIndex && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Configuration Panel */}
+            <div className="lg:col-span-1">
+              <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6 space-y-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Settings className="h-5 w-5" />
                 Configuration
@@ -275,7 +310,7 @@ export default function ExtractPage() {
               {/* Extract Button */}
               <button
                 onClick={handleExtract}
-                disabled={loading || (!selectedMomentType && !customQuery.trim())}
+                disabled={loading || (!selectedMomentType && !customQuery.trim()) || !selectedIndex}
                 className="w-full px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Extracting...' : 'Extract Moments'}
@@ -375,7 +410,8 @@ export default function ExtractPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

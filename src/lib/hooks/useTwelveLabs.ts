@@ -55,14 +55,14 @@ export function useTwelveLabs() {
     }
   }, []);
 
-  const searchVideos = useCallback(async (query: string, searchOptions = ['visual', 'audio']) => {
+  const searchVideos = useCallback(async (query: string, searchOptions = ['visual', 'audio'], indexId?: string) => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetch('/api/videos/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, searchOptions }),
+        body: JSON.stringify({ query, searchOptions, indexId }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -115,7 +115,8 @@ export function useTwelveLabs() {
     momentType?: string,
     customQuery?: string,
     videoIds?: string[],
-    confidence = 0.7
+    confidence = 0.7,
+    indexId?: string
   ) => {
     setLoading(true);
     setError(null);
@@ -123,7 +124,7 @@ export function useTwelveLabs() {
       const response = await fetch('/api/videos/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ momentType, customQuery, videoIds, confidence }),
+        body: JSON.stringify({ momentType, customQuery, videoIds, confidence, indexId }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -143,11 +144,12 @@ export function useTwelveLabs() {
     }
   }, []);
 
-  const listVideos = useCallback(async () => {
+  const listVideos = useCallback(async (indexId?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/videos/list');
+      const url = indexId ? `/api/videos/list?indexId=${indexId}` : '/api/videos/list';
+      const response = await fetch(url);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       return data;

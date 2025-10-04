@@ -25,16 +25,27 @@ export async function GET(request: NextRequest) {
 
     const videos = await twelveLabsClient.indexes.videos.list(indexId);
 
-    const formattedVideos = videos.data?.map((video) => ({
-      id: video.id,
-      filename: video.metadata?.filename,
-      duration: video.metadata?.duration,
-      width: video.metadata?.width,
-      height: video.metadata?.height,
-      size: video.metadata?.size,
-      createdAt: video.createdAt,
-      updatedAt: video.updatedAt,
-    }));
+    console.log('Raw videos response:', JSON.stringify(videos, null, 2));
+    console.log('Videos data length:', videos.data?.length);
+
+    const formattedVideos = videos.data?.map((video) => {
+      console.log('Processing video:', JSON.stringify(video, null, 2));
+      return {
+        id: video.id,
+        filename: video.systemMetadata?.filename,
+        duration: video.systemMetadata?.duration,
+        width: video.systemMetadata?.width,
+        height: video.systemMetadata?.height,
+        size: video.systemMetadata?.size,
+        createdAt: video.createdAt,
+        updatedAt: video.updatedAt,
+        thumbnailUrl: video.hls?.thumbnail_urls?.[0], // Get first thumbnail
+        videoUrl: video.hls?.video_url,
+        hlsStatus: video.hls?.status,
+      };
+    });
+
+    console.log('Formatted videos:', JSON.stringify(formattedVideos, null, 2));
 
     return NextResponse.json({
       videos: formattedVideos || [],

@@ -11,9 +11,12 @@ import {
   Play,
   Trash2,
   MoreVertical,
-  Calendar
+  Calendar,
+  Database
 } from 'lucide-react';
 import { useTwelveLabs } from '@/lib/hooks/useTwelveLabs';
+import { IndexSelector } from '@/components/IndexSelector';
+import Link from 'next/link';
 
 interface Video {
   id: string;
@@ -24,6 +27,9 @@ interface Video {
   size: number;
   createdAt: string;
   updatedAt: string;
+  thumbnailUrl?: string;
+  videoUrl?: string;
+  hlsStatus?: string;
 }
 
 interface DashboardStats {
@@ -35,6 +41,7 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalVideos: 0,
     totalDuration: 0,
@@ -48,13 +55,21 @@ export default function DashboardPage() {
   const { loading, error, listVideos } = useTwelveLabs();
 
   useEffect(() => {
-    loadVideos();
-  }, []);
+    if (selectedIndex) {
+      loadVideos();
+    }
+  }, [selectedIndex]);
 
   const loadVideos = async () => {
+    if (!selectedIndex) return;
+    
     try {
-      const videoData = await listVideos();
+      console.log('Loading videos for index:', selectedIndex);
+      const videoData = await listVideos(selectedIndex);
+      console.log('Received video data:', videoData);
       const videoList = videoData.videos || [];
+      console.log('Video list:', videoList);
+      console.log('Video list length:', videoList.length);
       setVideos(videoList);
       calculateStats(videoList);
     } catch (err) {
@@ -111,7 +126,7 @@ export default function DashboardPage() {
   };
 
   const filteredVideos = videos.filter(video =>
-    video.filename.toLowerCase().includes(searchTerm.toLowerCase())
+    video.filename?.toLowerCase().includes(searchTerm.toLowerCase()) || false
   );
 
   const sortedVideos = [...filteredVideos].sort((a, b) => {
@@ -119,8 +134,8 @@ export default function DashboardPage() {
     
     switch (sortBy) {
       case 'name':
-        aValue = a.filename;
-        bValue = b.filename;
+        aValue = a.filename || '';
+        bValue = b.filename || '';
         break;
       case 'date':
         aValue = new Date(a.createdAt).getTime();
@@ -196,9 +211,37 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Index Selection */}
+        <div className="mb-8">
+          <div className="max-w-md">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Index *
+            </label>
+            <IndexSelector
+              selectedIndex={selectedIndex}
+              onIndexSelect={setSelectedIndex}
+              className="w-full"
+              placeholder="Choose an index to view videos..."
+            />
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <p className="text-gray-500 dark:text-gray-400">
+                Select an index to view its videos and statistics
+              </p>
+              <Link
+                href="/indexes"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
+              >
+                <Database className="h-4 w-4" />
+                Manage Indexes
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat, idx) => (
+        {selectedIndex && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {statCards.map((stat, idx) => (
             <div
               key={idx}
               className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6"
@@ -217,11 +260,13 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Controls */}
-        <div className="mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
+        {selectedIndex && (
+          <div className="mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
           {/* Search */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -255,9 +300,27 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Videos Table */}
-        {loading ? (
+        {!selectedIndex ? (
+          <div className="text-center py-12">
+            <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Select an Index
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Choose an index from the dropdown above to view its videos and statistics.
+            </p>
+            <Link
+              href="/indexes"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl"
+            >
+              <Database className="h-5 w-5" />
+              Manage Indexes
+            </Link>
+          </div>
+        ) : loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700 mx-auto"></div>
             <p className="text-gray-600 dark:text-gray-400 mt-4">Loading videos...</p>
@@ -293,16 +356,48 @@ export default function DashboardPage() {
                     <tr key={video.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-all">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-8 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded flex items-center justify-center">
-                            <Play className="h-4 w-4 text-gray-500" />
+                          <div className="relative w-16 h-10 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded overflow-hidden">
+                            {video.thumbnailUrl ? (
+                              <>
+                                <img
+                                  src={video.thumbnailUrl}
+                                  alt={video.filename || 'Video thumbnail'}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    // Fallback to placeholder if thumbnail fails to load
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                                <div className="hidden w-full h-full flex items-center justify-center">
+                                  <Play className="h-4 w-4 text-gray-500" />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Play className="h-4 w-4 text-gray-500" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
+                              <Play className="h-4 w-4 text-white" />
+                            </div>
                           </div>
                           <div>
                             <p className="font-medium text-gray-900 dark:text-white truncate max-w-xs">
-                              {video.filename}
+                              {video.filename || 'Unnamed Video'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              ID: {video.id.slice(0, 8)}...
+                              ID: {video.id?.slice(0, 8) || 'N/A'}...
                             </p>
+                            {video.hlsStatus && (
+                              <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium mt-1 ${
+                                video.hlsStatus === 'COMPLETE' 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                              }`}>
+                                {video.hlsStatus}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>

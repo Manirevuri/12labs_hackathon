@@ -127,7 +127,10 @@ export function useTwelveLabs() {
         body: JSON.stringify({ momentType, customQuery, videoIds, confidence, indexId }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
+      if (!response.ok) {
+        console.error('Extract API error:', data);
+        throw new Error(data.error || `Extract failed with status: ${response.status}`);
+      }
       return data as {
         momentType: string;
         query: string;

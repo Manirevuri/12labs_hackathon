@@ -111,6 +111,13 @@ export async function POST(request: NextRequest) {
     const index = await twelveLabsClient.indexes.create({
       indexName,
       models,
+      videoOptions: {
+        enableHls: true, // Enable HLS for thumbnails and video streaming
+        thumbnailConfig: {
+          enabled: true,
+          count: 5, // Generate 5 thumbnails per video
+        }
+      }
     });
 
     return NextResponse.json({

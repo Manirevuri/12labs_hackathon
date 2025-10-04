@@ -11,6 +11,14 @@ export async function POST(request: NextRequest) {
       indexId
     } = await request.json();
 
+    console.log('Extract request parameters:', {
+      momentType,
+      customQuery,
+      videoIds,
+      confidence,
+      indexId
+    });
+
     if (!momentType && !customQuery) {
       return NextResponse.json(
         { error: 'Either momentType or customQuery is required' },
@@ -99,8 +107,19 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error extracting moments:', error);
+    console.error('Error details:', {
+      message: error.message,
+      statusCode: error.statusCode,
+      body: error.body,
+      stack: error.stack
+    });
+    
     return NextResponse.json(
-      { error: 'Failed to extract moments' },
+      { 
+        error: 'Failed to extract moments',
+        details: error.message,
+        statusCode: error.statusCode
+      },
       { status: 500 }
     );
   }

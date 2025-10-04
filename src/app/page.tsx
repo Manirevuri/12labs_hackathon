@@ -1,4 +1,5 @@
-import { Search, Film, Sparkles, Upload, Brain, Download } from 'lucide-react';
+import { Search, Film, Sparkles, Upload, Brain, Download, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -32,6 +33,22 @@ export default function Home() {
             Stop spending hours manually searching through video content. Memv uses advanced AI to index, 
             search, and extract specific moments from your entire video library in seconds.
           </p>
+          
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/upload"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-3 text-sm font-medium text-white hover:from-gray-800 hover:to-black focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all hover:shadow-lg"
+            >
+              Get Started
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl px-6 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
+            >
+              View Dashboard
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -69,9 +86,12 @@ export default function Home() {
                       disabled
                     />
                     
-                    <button className="w-full rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 px-4 py-3 text-sm font-medium text-white hover:from-gray-800 hover:to-black focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg" disabled>
-                      Coming Soon
-                    </button>
+                    <Link
+                      href="/search"
+                      className="w-full inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-gray-700 to-gray-900 px-4 py-3 text-sm font-medium text-white hover:from-gray-800 hover:to-black focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all hover:shadow-lg"
+                    >
+                      Go to Search Page
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -99,13 +119,25 @@ export default function Home() {
                   </p>
                   
                   <div className="space-y-3">
-                    <select className="w-full rounded-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all" disabled>
-                      <option>Select video collection...</option>
+                    <select 
+                      className="w-full rounded-lg bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
+                      disabled
+                    >
+                      <option>Select moment type...</option>
+                      <option>Emotional Moments</option>
+                      <option>Action Scenes</option>
+                      <option>Dialogue/Speech</option>
+                      <option>Brand/Logo Mentions</option>
+                      <option>Music/Musical Performances</option>
+                      <option>Landscape/Nature</option>
                     </select>
                     
-                    <button className="w-full rounded-lg bg-gradient-to-r from-gray-600 to-gray-800 px-4 py-3 text-sm font-medium text-white hover:from-gray-700 hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg" disabled>
-                      Coming Soon
-                    </button>
+                    <Link
+                      href="/extract"
+                      className="w-full inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-gray-600 to-gray-800 px-4 py-3 text-sm font-medium text-white hover:from-gray-700 hover:to-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all hover:shadow-lg"
+                    >
+                      Go to Extract Page
+                    </Link>
                   </div>
                 </div>
               </div>

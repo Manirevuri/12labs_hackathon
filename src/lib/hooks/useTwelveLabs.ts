@@ -1,0 +1,172 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+
+interface SearchResult {
+  id: string;
+  score: number;
+  start: number;
+  end: number;
+  metadata: {
+    video_id: string;
+    filename: string;
+    duration: number;
+  };
+  thumbnailUrl?: string;
+}
+
+interface UploadTask {
+  taskId: string;
+  status: string;
+  progress?: number;
+  videoId?: string;
+}
+
+interface ExtractedMoment {
+  id: string;
+  videoId: string;
+  filename: string;
+  start: number;
+  end: number;
+  duration: number;
+  score: number;
+  thumbnailUrl?: string;
+}
+
+export function useTwelveLabs() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createIndex = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/indexes', {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create index');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const searchVideos = useCallback(async (query: string, searchOptions = ['visual', 'audio']) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/videos/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, searchOptions }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      return data as { results: SearchResult[]; query: string; totalResults: number };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to search videos');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const uploadVideo = useCallback(async (file: File, fileName?: string, indexId?: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('video', file);
+      if (fileName) formData.append('fileName', fileName);
+      if (indexId) formData.append('indexId', indexId);
+
+      const response = await fetch('/api/videos/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      return data as UploadTask;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload video');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const checkTaskStatus = useCallback(async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/videos/upload?taskId=${taskId}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      return data as UploadTask;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to check task status');
+      throw err;
+    }
+  }, []);
+
+  const extractMoments = useCallback(async (
+    momentType?: string,
+    customQuery?: string,
+    videoIds?: string[],
+    confidence = 0.7
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/videos/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ momentType, customQuery, videoIds, confidence }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      return data as {
+        momentType: string;
+        query: string;
+        totalMoments: number;
+        videosProcessed: number;
+        moments: ExtractedMoment[];
+        groupedByVideo: Record<string, ExtractedMoment[]>;
+      };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to extract moments');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const listVideos = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/videos/list');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to list videos');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    loading,
+    error,
+    createIndex,
+    searchVideos,
+    uploadVideo,
+    checkTaskStatus,
+    extractMoments,
+    listVideos,
+  };
+}

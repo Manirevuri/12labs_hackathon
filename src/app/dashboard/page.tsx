@@ -169,25 +169,25 @@ export default function DashboardPage() {
       title: 'Total Videos',
       value: stats.totalVideos.toString(),
       icon: Video,
-      color: 'from-blue-500 to-blue-600'
+      color: 'from-gray-100 to-gray-200'
     },
     {
       title: 'Total Duration',
       value: formatDuration(stats.totalDuration),
       icon: Clock,
-      color: 'from-green-500 to-green-600'
+      color: 'from-gray-100 to-gray-200'
     },
     {
       title: 'Average Duration',
       value: formatDuration(stats.averageDuration),
       icon: Play,
-      color: 'from-purple-500 to-purple-600'
+      color: 'from-gray-100 to-gray-200'
     },
     {
       title: 'Recent Uploads',
       value: stats.recentUploads.toString(),
       icon: Upload,
-      color: 'from-orange-500 to-orange-600'
+      color: 'from-gray-100 to-gray-200'
     }
   ];
 
@@ -198,7 +198,7 @@ export default function DashboardPage() {
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl shadow-lg">
-              <LayoutDashboard className="h-8 w-8 text-white" />
+              <LayoutDashboard className="h-6 w-6 text-gray-500" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                 href="/indexes"
                 className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
               >
-                <Database className="h-4 w-4" />
+                <Database className="h-3 w-3 text-gray-500" />
                 Manage Indexes
               </Link>
             </div>
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div className={`p-3 bg-gradient-to-br ${stat.color} rounded-xl shadow-lg`}>
-                  <stat.icon className="h-6 w-6 text-white" />
+                  <stat.icon className="h-4 w-4 text-gray-500" />
                 </div>
               </div>
             </div>
@@ -269,7 +269,7 @@ export default function DashboardPage() {
           <div className="mb-6 space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
           {/* Search */}
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
             <input
               type="text"
               placeholder="Search videos..."
@@ -305,7 +305,7 @@ export default function DashboardPage() {
         {/* Videos Table */}
         {!selectedIndex ? (
           <div className="text-center py-12">
-            <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <Database className="h-8 w-8 text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               Select an Index
             </h3>
@@ -316,13 +316,13 @@ export default function DashboardPage() {
               href="/indexes"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl"
             >
-              <Database className="h-5 w-5" />
+              <Database className="h-4 w-4 text-gray-500" />
               Manage Indexes
             </Link>
           </div>
         ) : loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500 mx-auto"></div>
             <p className="text-gray-600 dark:text-gray-400 mt-4">Loading videos...</p>
           </div>
         ) : sortedVideos.length > 0 ? (
@@ -370,16 +370,16 @@ export default function DashboardPage() {
                                   }}
                                 />
                                 <div className="hidden w-full h-full flex items-center justify-center">
-                                  <Play className="h-4 w-4 text-gray-500" />
+                                  <Play className="h-3 w-3 text-gray-500" />
                                 </div>
                               </>
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <Play className="h-4 w-4 text-gray-500" />
+                                <Play className="h-3 w-3 text-gray-500" />
                               </div>
                             )}
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
-                              <Play className="h-4 w-4 text-white" />
+                              <Play className="h-3 w-3 text-gray-500" />
                             </div>
                           </div>
                           <div>
@@ -412,20 +412,20 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <Calendar className="h-3 w-3 text-gray-500" />
                           {formatDate(video.createdAt)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                            <Search className="h-4 w-4" />
+                            <Search className="h-3 w-3 text-gray-500" />
                           </button>
                           <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                            <Film className="h-4 w-4" />
+                            <Film className="h-3 w-3 text-gray-500" />
                           </button>
                           <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3 text-gray-500" />
                           </button>
                         </div>
                       </td>
@@ -437,7 +437,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <Video className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <Video className="h-8 w-8 text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No videos found
             </h3>

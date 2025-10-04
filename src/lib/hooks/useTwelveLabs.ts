@@ -22,16 +22,6 @@ interface UploadTask {
   videoId?: string;
 }
 
-interface ExtractedMoment {
-  id: string;
-  videoId: string;
-  filename: string;
-  start: number;
-  end: number;
-  duration: number;
-  score: number;
-  thumbnailUrl?: string;
-}
 
 export function useTwelveLabs() {
   const [loading, setLoading] = useState(false);
@@ -111,41 +101,6 @@ export function useTwelveLabs() {
     }
   }, []);
 
-  const extractMoments = useCallback(async (
-    momentType?: string,
-    customQuery?: string,
-    videoIds?: string[],
-    confidence = 0.7,
-    indexId?: string
-  ) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/videos/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ momentType, customQuery, videoIds, confidence, indexId }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        console.error('Extract API error:', data);
-        throw new Error(data.error || `Extract failed with status: ${response.status}`);
-      }
-      return data as {
-        momentType: string;
-        query: string;
-        totalMoments: number;
-        videosProcessed: number;
-        moments: ExtractedMoment[];
-        groupedByVideo: Record<string, ExtractedMoment[]>;
-      };
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to extract moments');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const listVideos = useCallback(async (indexId?: string) => {
     setLoading(true);
@@ -171,7 +126,6 @@ export function useTwelveLabs() {
     searchVideos,
     uploadVideo,
     checkTaskStatus,
-    extractMoments,
     listVideos,
   };
 }

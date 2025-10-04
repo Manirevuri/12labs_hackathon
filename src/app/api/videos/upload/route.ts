@@ -83,9 +83,7 @@ export async function POST(request: NextRequest) {
       task = await twelveLabsClient.tasks.create({
         indexId: indexId,
         videoUrl: blobResult.url,
-        filename: fileName || file.name,
-        enableVideoStream: true, // Explicitly enable video streaming
-        generateThumbnails: true, // Request thumbnail generation
+        enableVideoStream: true
       });
       console.log('Task created successfully:', task.id);
     } catch (taskError) {

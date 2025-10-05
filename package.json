@@ -10,6 +10,7 @@
   "dependencies": {
     "@clerk/nextjs": "^6.33.2",
     "@vercel/blob": "^2.0.0",
+    "@xyflow/react": "^12.8.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.544.0",

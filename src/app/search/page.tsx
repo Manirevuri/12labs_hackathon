@@ -216,6 +216,15 @@ export default function ChatPage() {
           startTime: typeof node.data.start === 'number' ? node.data.start : 0,
           endTime: typeof node.data.end === 'number' ? node.data.end : (typeof node.data.start === 'number' ? node.data.start + 10 : 10)
         });
+
+        // Auto-play the segment in the main video node
+        setTimeout(() => {
+          const mainVideo = document.querySelector(`video[src="${videoNode.data.videoUrl}"]`) as HTMLVideoElement;
+          if (mainVideo && mainVideo.controls) {
+            mainVideo.currentTime = typeof node.data.start === 'number' ? node.data.start : 0;
+            mainVideo.play().catch(console.error);
+          }
+        }, 100);
       }
     }
     // If clicking a video node, play the full video
@@ -314,12 +323,14 @@ export default function ChatPage() {
               />
               
               {/* Video at specific timestamp (no controls) */}
-              {activeVideoPlayer && nodes.find(n => n.id === activeVideoPlayer.nodeId)?.data.videoUrl ? (
+              {nodes.find(n => n.id.startsWith('video-') && 
+                edges.some(e => e.source === n.id && e.target === id))?.data.videoUrl ? (
                 <video
                   key={`embedding-${id}-${data.start}`}
                   className="absolute inset-0 w-full h-full object-cover rounded-lg"
                   preload="metadata"
-                  src={activeVideoPlayer.url}
+                  src={nodes.find(n => n.id.startsWith('video-') && 
+                    edges.some(e => e.source === n.id && e.target === id))?.data.videoUrl}
                   style={{ pointerEvents: 'none' }}
                   onLoadedMetadata={(e) => {
                     const video = e.target as HTMLVideoElement;

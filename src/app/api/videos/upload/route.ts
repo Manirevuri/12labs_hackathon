@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { twelveLabsClient } from '@/lib/twelvelabs';
 import * as blob from '@vercel/blob';
+import { storeTaskMapping, isUserIndexOwner } from '@/lib/redis';
+import { generateVideoThumbnails } from '@/lib/thumbnail-generator';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Upload request started');
+    
+    // Get authenticated user
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('video') as File;
     const fileName = formData.get('fileName') as string;
@@ -14,7 +28,8 @@ export async function POST(request: NextRequest) {
       fileName: fileName || file?.name,
       indexId,
       fileSize: file?.size,
-      fileType: file?.type
+      fileType: file?.type,
+      userId
     });
 
     if (!file) {
@@ -30,6 +45,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Index ID is required' },
         { status: 400 }
+      );
+    }
+
+    // Check if user owns this index
+    const isOwner = await isUserIndexOwner(userId, indexId);
+    if (!isOwner) {
+      return NextResponse.json(
+        { error: 'You do not have access to this index' },
+        { status: 403 }
       );
     }
 
@@ -55,11 +79,19 @@ export async function POST(request: NextRequest) {
         access: 'public',
       });
       console.log('Blob upload successful:', blobResult.url);
-    } catch (blobError) {
-      console.error('Initial blob upload failed:', blobError.message);
+      
+      // Verify the blob is accessible
+      try {
+        const response = await fetch(blobResult.url, { method: 'HEAD' });
+        console.log('Blob URL accessibility check:', response.status, response.statusText);
+      } catch (checkError) {
+        console.warn('Could not verify blob URL accessibility:', checkError);
+      }
+    } catch (blobError: any) {
+      console.error('Initial blob upload failed:', blobError?.message);
       
       // If file already exists, add random suffix
-      if (blobError.message?.includes('This blob already exists')) {
+      if (blobError?.message?.includes('This blob already exists')) {
         console.log('File exists, uploading with unique filename...');
         try {
           blobResult = await blob.put(fileName || file.name, file, {
@@ -67,12 +99,20 @@ export async function POST(request: NextRequest) {
             addRandomSuffix: true,
           });
           console.log('Blob upload successful with unique name:', blobResult.url);
-        } catch (retryError) {
+          
+          // Verify the blob is accessible
+          try {
+            const response = await fetch(blobResult.url, { method: 'HEAD' });
+            console.log('Blob URL accessibility check (retry):', response.status, response.statusText);
+          } catch (checkError) {
+            console.warn('Could not verify blob URL accessibility (retry):', checkError);
+          }
+        } catch (retryError: any) {
           console.error('Retry blob upload failed:', retryError);
-          throw new Error(`Failed to upload video to storage: ${retryError.message}`);
+          throw new Error(`Failed to upload video to storage: ${retryError?.message}`);
         }
       } else {
-        throw new Error(`Failed to upload video to storage: ${blobError.message}`);
+        throw new Error(`Failed to upload video to storage: ${blobError?.message}`);
       }
     }
     
@@ -86,31 +126,55 @@ export async function POST(request: NextRequest) {
         enableVideoStream: true
       });
       console.log('Task created successfully:', task.id);
-    } catch (taskError) {
+    } catch (taskError: any) {
       console.error('TwelveLabs task creation failed:', taskError);
-      throw new Error(`Failed to create TwelveLabs processing task: ${taskError.message}`);
+      throw new Error(`Failed to create TwelveLabs processing task: ${taskError?.message}`);
+    }
+
+    // Step 3: Store task ID to video URL mapping in Redis (with index ID)
+    console.log('Storing task mapping in Redis...');
+    try {
+      if (task.id) {
+        await storeTaskMapping(task.id, blobResult.url, indexId);
+        console.log('Task mapping stored successfully with index ID');
+      }
+    } catch (redisError) {
+      console.error('Failed to store task mapping in Redis:', redisError);
+      // Continue even if Redis fails - not critical
+    }
+
+    // Step 4: If task has videoId immediately, store video URL mapping right away
+    if (task.videoId) {
+      console.log('Task has videoId immediately, storing video URL mapping...');
+      try {
+        const { storeVideoUrl } = await import('@/lib/redis');
+        await storeVideoUrl(task.videoId, blobResult.url);
+        console.log(`Immediately stored video URL for video ID: ${task.videoId}`);
+      } catch (redisError) {
+        console.error('Failed to immediately store video URL:', redisError);
+      }
     }
 
     return NextResponse.json({
       taskId: task.id,
-      status: task.status,
+      status: (task as any).status || 'processing',
       blobUrl: blobResult.url,
       message: 'Video uploaded to storage and TwelveLabs processing started',
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error uploading video:', error);
     console.error('Error details:', {
-      message: error.message,
-      statusCode: error.statusCode,
-      body: error.body,
-      stack: error.stack
+      message: error?.message,
+      statusCode: error?.statusCode,
+      body: error?.body,
+      stack: error?.stack
     });
     
     return NextResponse.json(
       { 
         error: 'Failed to upload video',
-        details: error.message,
-        statusCode: error.statusCode
+        details: error?.message,
+        statusCode: error?.statusCode
       },
       { status: 500 }
     );
@@ -130,11 +194,61 @@ export async function GET(request: NextRequest) {
     }
 
     const task = await twelveLabsClient.tasks.retrieve(taskId);
+    console.log(`Task status check - ID: ${taskId}, Status: ${task.status}, VideoID: ${task.videoId}`);
+
+    // If task is ready and has a video ID, store the video ID to URL mapping and generate thumbnails
+    if (task.status === 'ready' && task.videoId) {
+      console.log(`Task is ready! Storing video URL mapping for videoId: ${task.videoId}`);
+      const { getTaskMapping, storeVideoUrl, getTaskIndexId } = await import('@/lib/redis');
+      
+      // Get the video URL from the task mapping
+      const videoUrl = await getTaskMapping(taskId);
+      console.log(`Retrieved video URL from task mapping: ${videoUrl}`);
+      
+      if (videoUrl) {
+        // Store video ID to URL mapping
+        const stored = await storeVideoUrl(task.videoId, videoUrl);
+        console.log(`Video URL storage result: ${stored ? 'SUCCESS' : 'FAILED'} for video ID: ${task.videoId}`);
+        
+        // Trigger thumbnail generation in the background
+        try {
+          // Get the index ID from Redis (stored when task was created)
+          const indexId = await getTaskIndexId(taskId);
+          
+          if (indexId) {
+            // Trigger thumbnail generation (fire and forget)
+            fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/videos/process-thumbnails`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                taskId,
+                videoId: task.videoId,
+                indexId
+              })
+            }).then(response => {
+              if (response.ok) {
+                console.log(`Thumbnail generation triggered for video ${task.videoId}`);
+              } else {
+                console.error('Failed to trigger thumbnail generation');
+              }
+            }).catch(error => {
+              console.error('Error triggering thumbnail generation:', error);
+            });
+          } else {
+            console.log('Index ID not found for task, skipping thumbnail generation');
+          }
+        } catch (error) {
+          console.error('Error in thumbnail generation setup:', error);
+        }
+      }
+    }
 
     return NextResponse.json({
       taskId: task.id,
       status: task.status,
-      progress: task.metadata?.progress,
+      progress: (task as any).metadata?.progress || (task as any).progress,
       videoId: task.videoId,
     });
   } catch (error) {

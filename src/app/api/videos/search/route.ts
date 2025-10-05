@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { twelveLabsClient } from '@/lib/twelvelabs';
+import { getVideoUrl, isUserIndexOwner } from '@/lib/redis';
+import { generateThumbnailUrl } from '@/lib/thumbnail-generator';
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { query, searchOptions = ['visual', 'audio'], indexId } = await request.json();
 
     if (!query) {
@@ -16,6 +29,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Index ID is required' },
         { status: 400 }
+      );
+    }
+
+    // Check if user owns this index
+    const isOwner = await isUserIndexOwner(userId, indexId);
+    if (!isOwner) {
+      return NextResponse.json(
+        { error: 'You do not have access to this index' },
+        { status: 403 }
       );
     }
 
@@ -36,28 +58,52 @@ export async function POST(request: NextRequest) {
       pageLimit: 10,
     });
 
-    console.log('Raw search results:', JSON.stringify(searchResults, null, 2));
-    console.log('Search results data length:', searchResults.data?.length);
+    // DO NOT stringify searchResults - it contains non-serializable objects
+    console.log('Search completed, data length:', searchResults.data?.length);
 
-    const formattedResults = searchResults.data?.map((result) => {
-      console.log('Processing search result:', JSON.stringify(result, null, 2));
+    const formattedResults = await Promise.all(searchResults.data?.map(async (result: any) => {
+      const videoId = result.video_id || result.videoId || 'unknown';
+      const startTime = result.start || 0;
+      
+      // Try to get video URL from Redis
+      let videoUrl = null;
+      try {
+        videoUrl = await getVideoUrl(videoId);
+        if (videoUrl) {
+          console.log(`Found video URL in Redis for video ID: ${videoId} -> ${videoUrl}`);
+        } else {
+          console.log(`No video URL found in Redis for video ID: ${videoId}`);
+        }
+      } catch (error) {
+        console.error(`Failed to get video URL from Redis for video ID: ${videoId}`, error);
+      }
+      
+      // Generate thumbnail URL based on videoId and timestamp
+      // This will create a consistent URL pattern for thumbnails
+      const thumbnailUrl = generateThumbnailUrl(videoId, startTime);
+      
+      // Use safe property access with defaults
+      const finalVideoUrl = videoUrl || result.video_url || result.metadata?.video_url || null;
+      console.log(`Final video URL for ${videoId}: ${finalVideoUrl}`);
+      
       return {
-        id: result.id || result.videoId,
-        score: result.score,
-        start: result.start,
-        end: result.end,
+        id: result.id || videoId || Math.random().toString(36).substring(7),
+        score: result.score || 0,
+        start: startTime,
+        end: result.end || 0,
         metadata: {
-          video_id: result.videoId,
-          filename: result.filename || `Video ${result.videoId}`,
-          duration: result.end - result.start,
+          video_id: videoId,
+          filename: result.metadata?.filename || `Video ${videoId}`,
+          duration: (result.end || 0) - startTime,
           transcription: result.transcription,
-          confidence: result.confidence
+          confidence: result.confidence,
+          // Use video URL from Redis if available, otherwise fallback to result
+          video_url: finalVideoUrl
         },
-        thumbnailUrl: result.thumbnailUrl,
+        // Use generated thumbnail URL instead of the one from TwelveLabs
+        thumbnailUrl: thumbnailUrl,
       };
-    });
-
-    console.log('Formatted search results:', JSON.stringify(formattedResults, null, 2));
+    }) || []);
 
     return NextResponse.json({
       results: formattedResults || [],

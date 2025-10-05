@@ -105,14 +105,14 @@ export default function UploadPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ready': return 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20';
-      case 'failed': return 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20';
-      default: return 'text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-900/20';
+      case 'ready': return 'text-green-400 bg-green-900/20';
+      case 'failed': return 'text-red-400 bg-red-900/20';
+      default: return 'text-yellow-400 bg-yellow-900/20';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -121,10 +121,10 @@ export default function UploadPage() {
               <Upload className="h-8 w-8 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-3xl font-bold text-white mb-4">
             Upload Videos
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             Upload your videos to start indexing them with AI. Once processed, you can search for any moment or extract specific scenes.
           </p>
         </div>
@@ -132,7 +132,7 @@ export default function UploadPage() {
         {/* Index Selection */}
         <div className="mb-8">
           <div className="max-w-md mx-auto">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Select Index *
             </label>
             <IndexSelector
@@ -142,12 +142,12 @@ export default function UploadPage() {
               placeholder="Choose an index for your videos..."
             />
             <div className="mt-2 flex items-center justify-between text-sm">
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-400">
                 Videos will be uploaded to the selected index
               </p>
               <Link
                 href="/indexes"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
+                className="text-gray-400 hover:text-white transition-colors font-medium flex items-center gap-1"
               >
                 <Database className="h-4 w-4" />
                 Manage Indexes
@@ -164,11 +164,11 @@ export default function UploadPage() {
             onDragLeave={handleDragLeave}
             className={`relative overflow-hidden rounded-2xl border-2 border-dashed transition-all ${
               isDragging
-                ? 'border-gray-400 bg-gray-50 dark:border-gray-500 dark:bg-gray-800/50'
-                : 'border-gray-300 dark:border-gray-700'
+                ? 'border-gray-500 bg-gray-800/50'
+                : 'border-gray-700'
             }`}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-white/40 dark:from-gray-800/80 dark:to-gray-800/40 backdrop-blur-xl" />
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-800/80 to-gray-800/40 backdrop-blur-xl" />
             <div className="relative p-12 text-center">
               <div className="flex justify-center mb-4">
                 <FileVideo className="h-12 w-12 text-gray-400" />
@@ -176,8 +176,8 @@ export default function UploadPage() {
               
               {selectedFile ? (
                 <div className="space-y-4">
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <p className="font-medium text-gray-900 dark:text-white">
+                  <div className="p-4 bg-gray-800 rounded-lg">
+                    <p className="font-medium text-white">
                       {selectedFile.name}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -195,7 +195,7 @@ export default function UploadPage() {
                     </button>
                     <button
                       onClick={() => setSelectedFile(null)}
-                      className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+                      className="px-6 py-2 border border-gray-600 text-gray-300 rounded-lg font-medium hover:bg-gray-800 transition-all"
                     >
                       Cancel
                     </button>
@@ -203,10 +203,10 @@ export default function UploadPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-xl font-medium text-gray-900 dark:text-white">
+                  <p className="text-xl font-medium text-white">
                     Drop your video here or click to browse
                   </p>
-                  <p className="text-gray-500 dark:text-gray-400">
+                  <p className="text-gray-400">
                     Supports MP4, MOV, AVI and other video formats
                   </p>
                   
@@ -232,7 +232,7 @@ export default function UploadPage() {
         {/* Upload Progress */}
         {uploadTasks.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-xl font-semibold text-white">
               Upload History
             </h2>
             
@@ -240,16 +240,16 @@ export default function UploadPage() {
               {uploadTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="relative overflow-hidden rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-4"
+                  className="relative overflow-hidden rounded-xl bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {getStatusIcon(task.status)}
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">
+                        <p className="font-medium text-white">
                           {task.filename}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm text-gray-400">
                           Task ID: {task.id}
                         </p>
                       </div>
@@ -274,7 +274,7 @@ export default function UploadPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+          <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-300">
             {error}
           </div>
         )}

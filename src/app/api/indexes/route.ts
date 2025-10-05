@@ -1,13 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { twelveLabsClient } from '@/lib/twelvelabs';
+import { getUserIndexes, addUserIndex } from '@/lib/redis';
 
 export async function GET() {
   try {
-    const indexes = await twelveLabsClient.indexes.list();
+    // Get authenticated user
+    const { userId } = await auth();
     
-    // Get video counts for each index
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get all indexes from TwelveLabs
+    const allIndexes = await twelveLabsClient.indexes.list();
+    
+    // Get user's index IDs from Redis
+    const userIndexIds = await getUserIndexes(userId);
+    
+    // Filter indexes to only include user's indexes
+    const userIndexes = (allIndexes.data || []).filter(
+      index => userIndexIds.includes(index.id)
+    );
+    
+    // Get video counts for each user index
     const indexesWithCounts = await Promise.all(
-      (indexes.data || []).map(async (index) => {
+      userIndexes.map(async (index) => {
         if (!index.id) {
           console.error('Index missing ID:', index);
           return {
@@ -44,6 +65,16 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { indexName, models } = await request.json();
 
     if (!indexName || !indexName.trim()) {
@@ -119,6 +150,12 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Associate index with user in Redis
+    if (index.id) {
+      await addUserIndex(userId, index.id);
+      console.log(`Associated index ${index.id} with user ${userId}`);
+    }
 
     return NextResponse.json({
       index: {

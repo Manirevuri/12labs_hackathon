@@ -1,10 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Play, Clock, Star, Filter, Database } from 'lucide-react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { 
+  ReactFlow, 
+  Node, 
+  Edge, 
+  addEdge, 
+  useNodesState, 
+  useEdgesState,
+  Controls,
+  Background,
+  MiniMap,
+  Connection,
+  ConnectionMode,
+  Handle,
+  Position
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { Search, MessageCircle, Video, Play, Star } from 'lucide-react';
 import { useTwelveLabs } from '@/lib/hooks/useTwelveLabs';
 import { IndexSelector } from '@/components/IndexSelector';
-import Link from 'next/link';
 
 interface SearchResult {
   id: string;
@@ -15,41 +30,22 @@ interface SearchResult {
     video_id: string;
     filename: string;
     duration: number;
+    video_url?: string;
   };
   thumbnailUrl?: string;
 }
 
-export default function SearchPage() {
+
+export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [selectedOptions, setSelectedOptions] = useState(['visual', 'audio']);
-  const [sortBy, setSortBy] = useState<'relevance' | 'duration'>('relevance');
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [selectedVideo, setSelectedVideo] = useState<{nodeId: string, url: string, startTime: number, endTime: number} | null>(null);
+  const [activeVideoPlayer, setActiveVideoPlayer] = useState<{videoId: string, url: string, nodeId: string} | null>(null);
 
   const { loading, error, searchVideos } = useTwelveLabs();
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim() || !selectedIndex) return;
-
-    try {
-      const results = await searchVideos(searchQuery, selectedOptions, selectedIndex);
-      setSearchResults(results.results);
-      
-      // Add to search history
-      if (!searchHistory.includes(searchQuery)) {
-        setSearchHistory(prev => [searchQuery, ...prev.slice(0, 4)]);
-      }
-    } catch (err) {
-      console.error('Search failed:', err);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -57,277 +53,460 @@ export default function SearchPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const sortedResults = [...searchResults].sort((a, b) => {
-    if (sortBy === 'relevance') {
-      return b.score - a.score;
-    } else {
-      return (b.end - b.start) - (a.end - a.start);
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || !selectedIndex) return;
+
+    try {
+      const results = await searchVideos(searchQuery, ['visual', 'audio'], selectedIndex);
+      setSearchResults(results.results);
+      
+      // Group results by video
+      const groupedByVideo = results.results.reduce((acc, result) => {
+        const videoId = result.metadata?.video_id;
+        if (!acc[videoId]) {
+          acc[videoId] = [];
+        }
+        acc[videoId].push(result);
+        return acc;
+      }, {} as Record<string, SearchResult[]>);
+
+      // Create nodes and edges for each individual embedding
+      const newNodes: Node[] = [];
+      const newEdges: Edge[] = [];
+      
+      let yOffset = 0;
+      const videoSpacing = 500; // Increased spacing for larger nodes
+
+      Object.entries(groupedByVideo).forEach(([videoId, moments]) => {
+        const randomVideoId = Math.random().toString(36).substring(7);
+        
+        // Define positioning variables first
+        const nodeHeight = 180; // Height of embedding nodes (50% larger)
+        const nodeSpacing = nodeHeight + 30; // Add 30px gap between nodes
+        const videoWidth = 570; // Width of video node (50% larger)
+        const videoX = 500; // Move video left to keep it in bounds
+        const gap = 120; // Gap between video and embedding nodes
+        const embeddingX = videoX + videoWidth + gap; // Position embeddings with gap from video
+        const startY = yOffset + 50; // Start above the video center
+        
+        // Create video root node (center)
+        const videoNodeId = `video-${videoId}-${randomVideoId}`;
+        console.log('Creating video node:', videoNodeId);
+        const videoNode = {
+          id: videoNodeId,
+          type: 'default',
+          position: { x: videoX, y: yOffset + 150 },
+          data: {
+            filename: moments[0]?.metadata?.filename || `Video ${videoId}`,
+            videoId,
+            totalResults: moments.length,
+            thumbnailUrl: moments[0]?.thumbnailUrl,
+            // Use actual video URL if available
+            videoUrl: moments[0]?.metadata?.video_url
+          },
+          style: {
+            background: 'transparent',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            width: 570,
+            height: 420,
+            fontSize: '11px',
+            fontWeight: 'bold',
+            zIndex: 10
+          }
+        };
+        newNodes.push(videoNode);
+        
+        moments.forEach((moment, momentIndex) => {
+          const randomMomentId = Math.random().toString(36).substring(7);
+          const x = embeddingX; // Position with proper spacing from video
+          const y = startY + (momentIndex * nodeSpacing);
+
+          console.log('Moment thumbnail URL:', moment.thumbnailUrl, 'for moment:', moment.id);
+
+          const momentNode = {
+            id: `moment-${moment.id}-${randomMomentId}`,
+            type: 'default',
+            position: { x , y },
+            data: {
+              start: moment.start || 0,
+              end: moment.end || (moment.start + 10),
+              score: moment.score,
+              videoId: moment.metadata?.video_id,
+              thumbnailUrl: moment.thumbnailUrl
+            },
+            style: {
+              background: 'transparent',
+              color: 'white',
+              border: '1px solid #9ca3af',
+              borderRadius: '8px',
+              width: 270,
+              height: 180,
+              fontSize: '12px',
+              cursor: 'pointer'
+            }
+          };
+          newNodes.push(momentNode);
+
+          // Create edge from video to each individual embedding with unique ID
+          const edge: Edge = {
+            id: `edge-${videoId}-${moment.id}-${randomMomentId}`,
+            source: videoNodeId,
+            target: `moment-${moment.id}-${randomMomentId}`,
+            type: 'bezier',
+            animated: true,
+            style: { 
+              stroke: '#ffffff', 
+              strokeWidth: 2,
+              strokeOpacity: 0.6 
+            }
+          };
+          console.log('Creating edge:', edge.source, '->', edge.target);
+          newEdges.push(edge);
+        });
+
+        // Calculate spacing based on number of moment nodes in vertical layout
+        const totalMomentHeight = moments.length * nodeSpacing; // Total height of all moment nodes
+        yOffset += Math.max(videoSpacing, totalMomentHeight + 100); // Ensure enough space for all moments
+      });
+
+      console.log('Setting nodes:', newNodes.length, 'nodes');
+      console.log('Setting edges:', newEdges.length, 'edges');
+      setNodes(newNodes);
+      setEdges(newEdges);
+    } catch (err) {
+      console.error('Search failed:', err);
     }
-  });
+  };
 
-  const exampleQueries = [
-    "emotional reunion scene",
-    "product close-up shots",
-    "people laughing and smiling",
-    "action sequences with movement",
-    "dialogue between two people",
-    "outdoor landscape views",
-    "music and dancing",
-    "brand logos appearing"
-  ];
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
+  );
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl shadow-lg">
-              <Search className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Search Video Moments
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Use natural language to find exact moments across your entire video library. 
-            Describe what you're looking for and AI will find the matching scenes.
-          </p>
-        </div>
+  // Function to pause all videos
+  const pauseAllVideos = useCallback(() => {
+    const videos = document.querySelectorAll('video');
+    videos.forEach(video => {
+      video.pause();
+    });
+  }, []);
 
-        {/* Index Selection */}
-        <div className="mb-8">
-          <div className="max-w-md mx-auto">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Select Index *
-            </label>
-            <IndexSelector
-              selectedIndex={selectedIndex}
-              onIndexSelect={setSelectedIndex}
-              className="w-full"
-              placeholder="Choose an index to search..."
-            />
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <p className="text-gray-500 dark:text-gray-400">
-                Search will be performed within the selected index
-              </p>
-              <Link
-                href="/indexes"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
-              >
-                <Database className="h-4 w-4" />
-                Manage Indexes
-              </Link>
-            </div>
-          </div>
-        </div>
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    // Pause all videos first
+    pauseAllVideos();
+    
+    // If clicking an embedding node, set video to play from that timestamp
+    if (node.id.startsWith('moment-')) {
+      const videoNode = nodes.find(n => n.id.startsWith('video-') && 
+        edges.some(e => e.source === n.id && e.target === node.id));
+      
+      if (videoNode?.data.videoUrl && typeof videoNode.data.videoUrl === 'string') {
+        // Set the active video player to show in the main video node
+        setActiveVideoPlayer({
+          videoId: videoNode.data.videoId as string,
+          url: videoNode.data.videoUrl as string,
+          nodeId: videoNode.id
+        });
+        
+        setSelectedVideo({
+          nodeId: videoNode.id, // Use the specific video node ID
+          url: videoNode.data.videoUrl as string,
+          startTime: typeof node.data.start === 'number' ? node.data.start : 0,
+          endTime: typeof node.data.end === 'number' ? node.data.end : (typeof node.data.start === 'number' ? node.data.start + 10 : 10)
+        });
 
-        {/* Search Interface */}
-        {selectedIndex && (
-          <div className="mb-8">
-            <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
-            {/* Search Input */}
-            <div className="flex gap-3 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Describe the moment you're looking for..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
-                />
-              </div>
-              <button
-                onClick={handleSearch}
-                disabled={loading || !searchQuery.trim() || !selectedIndex}
-                className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Searching...' : 'Search'}
-              </button>
-            </div>
+        // Auto-play the segment in the main video node
+        setTimeout(() => {
+          const mainVideo = document.querySelector(`video[src="${videoNode.data.videoUrl}"]`) as HTMLVideoElement;
+          if (mainVideo && mainVideo.controls) {
+            mainVideo.currentTime = typeof node.data.start === 'number' ? node.data.start : 0;
+            mainVideo.play().catch(console.error);
+          }
+        }, 100);
+      }
+    }
+    // If clicking a video node, play the full video
+    else if (node.id.startsWith('video-') && node.data.videoUrl && typeof node.data.videoUrl === 'string') {
+      console.log('Clicking video node:', node.id, 'setting activeVideoPlayer to:', node.id);
+      
+      // Set the active video player to show in this video node
+      setActiveVideoPlayer({
+        videoId: node.data.videoId as string,
+        url: node.data.videoUrl as string,
+        nodeId: node.id
+      });
+      
+      setSelectedVideo({
+        nodeId: node.id, // Use the specific video node ID
+        url: node.data.videoUrl as string,
+        startTime: 0,
+        endTime: -1 // Use -1 to indicate full video (no auto-pause)
+      });
+    }
+  }, [nodes, edges, pauseAllVideos]);
 
-            {/* Search Options */}
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">Search in:</span>
-              </div>
-              
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedOptions.includes('visual')}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedOptions(prev => [...prev, 'visual']);
-                    } else {
-                      setSelectedOptions(prev => prev.filter(opt => opt !== 'visual'));
-                    }
-                  }}
-                  className="rounded border-gray-300"
-                />
-                <span className="text-gray-700 dark:text-gray-300">Visual</span>
-              </label>
-              
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedOptions.includes('audio')}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedOptions(prev => [...prev, 'audio']);
-                    } else {
-                      setSelectedOptions(prev => prev.filter(opt => opt !== 'audio'));
-                    }
-                  }}
-                  className="rounded border-gray-300"
-                />
-                <span className="text-gray-700 dark:text-gray-300">Audio</span>
-              </label>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'relevance' | 'duration')}
-                className="px-3 py-1 bg-white/60 dark:bg-gray-900/60 border border-gray-200/50 dark:border-gray-700/50 rounded text-gray-700 dark:text-gray-300 text-sm"
-              >
-                <option value="relevance">Sort by Relevance</option>
-                <option value="duration">Sort by Duration</option>
-              </select>
-            </div>
-          </div>
-          </div>
-        )}
-
-        {/* Example Queries */}
-        {selectedIndex && searchResults.length === 0 && !loading && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Try these example searches:
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {exampleQueries.map((query, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSearchQuery(query)}
-                  className="text-left p-3 bg-white/40 dark:bg-gray-800/40 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-lg hover:bg-white/60 dark:hover:bg-gray-800/60 transition-all text-gray-700 dark:text-gray-300"
-                >
-                  "{query}"
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Search History */}
-        {searchHistory.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Recent Searches:
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {searchHistory.map((query, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSearchQuery(query)}
-                  className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-                >
-                  {query}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Search Results */}
-        {searchResults.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Found {searchResults.length} moments
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedResults.map((result, idx) => (
-                <div
-                  key={`${result.id}-${idx}`}
-                  className="relative overflow-hidden rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-lg transition-all group"
-                >
-                  {/* Thumbnail */}
-                  <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center overflow-hidden">
-                    {result.thumbnailUrl ? (
-                      <img 
-                        src={result.thumbnailUrl}
-                        alt={result.metadata?.filename || 'Video thumbnail'}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div className={`w-full h-full flex items-center justify-center ${result.thumbnailUrl ? 'hidden' : 'flex'}`}>
-                      <Play className="h-12 w-12 text-gray-500 group-hover:text-gray-700 transition-colors" />
-                    </div>
-                    <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                      {formatTime(result.end - result.start)}
-                    </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Play className="h-8 w-8 text-white" />
-                    </div>
+  // Custom node types
+  const nodeTypes = useMemo(() => ({
+    default: ({ data, id }: { data: any; id: string }) => {
+      const isVideo = id.startsWith('video-');
+      
+      if (isVideo) {
+        console.log('Video node rendering:', id, 'activeVideoPlayer:', activeVideoPlayer?.nodeId, 'matches:', activeVideoPlayer?.nodeId === id);
+        return (
+          <div className="relative rounded-lg shadow-2xl" style={{ width: 570, height: 420 }}>
+            <div className="relative bg-gray-900 text-white rounded-lg border border-gray-700 shadow-xl w-full h-full">
+              <Handle
+                type="source"
+                position={Position.Right}
+                style={{ background: '#6b7280', width: 12, height: 12 }}
+              />
+              {data.videoUrl ? (
+                <div className="w-full h-full relative rounded-lg">
+                  <video
+                    key={`player-${data.videoId}`}
+                    className="w-full h-full object-cover rounded-lg"
+                    controls
+                    controlsList="nodownload"
+                    preload="metadata"
+                    src={data.videoUrl}
+                    style={{ 
+                      zIndex: 1,
+                      outline: 'none'
+                    }}
+                    onLoadedMetadata={(e) => {
+                      const video = e.target as HTMLVideoElement;
+                      if (selectedVideo?.nodeId === id && typeof selectedVideo.startTime === 'number') {
+                        video.currentTime = selectedVideo.startTime;
+                        // Don't auto-play, just load to the correct time
+                      }
+                    }}
+                    onTimeUpdate={(e) => {
+                      const video = e.target as HTMLVideoElement;
+                      // Only pause for specific segments (endTime > 0), not full video (endTime = -1)
+                      if (selectedVideo?.nodeId === id && 
+                          selectedVideo?.endTime > 0 && 
+                          video.currentTime >= selectedVideo.endTime) {
+                        video.pause();
+                        video.currentTime = selectedVideo.startTime; // Reset to start of segment
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="p-4 flex flex-col items-center justify-center h-full">
+                  <Video className="h-8 w-8 mb-2" />
+                  <span className="font-bold text-sm text-center">{data.filename}</span>
+                  <div className="text-xs opacity-90 mt-1">
+                    {data.totalResults} clips
                   </div>
-
-                  {/* Content */}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 truncate">
-                      {result.metadata?.filename || 'Unknown Video'}
-                    </h3>
-                    
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                      <Clock className="h-4 w-4" />
-                      <span>
-                        {formatTime(result.start)} - {formatTime(result.end)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-yellow-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {result.score.toFixed(1)}%
-                        </span>
-                      </div>
-                      
-                      <button className="px-3 py-1 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg text-sm hover:from-gray-800 hover:to-black transition-all">
-                        View
-                      </button>
-                    </div>
+                  <div className="text-xs opacity-70 mt-2">
+                    No video URL available
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           </div>
-        )}
+        );
+      } else {
+        return (
+          <div className="relative group">
+            {/* Subtle glow effect on hover */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg opacity-0 group-hover:opacity-50 blur transition duration-200" />
+            
+            <div className="relative bg-transparent text-white rounded-lg border border-gray-400 shadow-lg hover:shadow-xl transition-all cursor-pointer overflow-hidden" style={{ width: 270, height: 180 }}>
+              <Handle
+                type="target"
+                position={Position.Left}
+                style={{ background: '#6b7280', width: 10, height: 10 }}
+              />
+              
+              {/* Video at specific timestamp (no controls) */}
+              {nodes.find(n => n.id.startsWith('video-') && 
+                edges.some(e => e.source === n.id && e.target === id))?.data.videoUrl ? (
+                <video
+                  key={`embedding-${id}-${data.start}`}
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                  preload="metadata"
+                  src={nodes.find(n => n.id.startsWith('video-') && 
+                    edges.some(e => e.source === n.id && e.target === id))?.data.videoUrl}
+                  style={{ pointerEvents: 'none' }}
+                  onLoadedMetadata={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    if (data.start) {
+                      video.currentTime = data.start;
+                    }
+                  }}
+                />
+              ) : data.thumbnailUrl ? (
+                <img 
+                  src={data.thumbnailUrl} 
+                  alt="Moment thumbnail"
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                  onError={(e) => {
+                    console.log('Thumbnail failed to load:', data.thumbnailUrl);
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : (
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-700 to-gray-600 rounded-lg flex items-center justify-center">
+                  <Play className="h-8 w-8 text-gray-400" />
+                </div>
+              )}
+              
+              {/* Content overlay */}
+              <div className="absolute inset-0 h-full flex flex-col justify-between p-2 z-10">
+                {/* Top section with time */}
+                <div className="flex items-center gap-2 bg-gray-900/80 rounded-md px-2 py-1 backdrop-blur-sm self-start">
+                  <Play className="h-3 w-3 flex-shrink-0 text-white" />
+                  <span className="text-xs font-medium whitespace-nowrap text-white">
+                    {formatTime(data.start)} - {formatTime(data.end)}
+                  </span>
+                </div>
+                
+                {/* Bottom section with score */}
+                <div className="flex items-center gap-2 bg-gray-900/80 rounded-md px-2 py-1 backdrop-blur-sm self-start">
+                  <Star className="h-3 w-3 text-yellow-300 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-white">{data.score.toFixed(0)}% match</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+  }), [selectedVideo, formatTime]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+      <div className="h-screen flex flex-col">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between p-4 bg-gray-800/80 backdrop-blur-xl border-b border-gray-700/50">
+          {/* Left: Title and Search */}
+          <div className="flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-gray-300" />
+              <h1 className="text-lg font-bold text-white">Video Search Flow</h1>
+            </div>
+            
+            {selectedIndex && (
+              <div className="flex items-center gap-3 flex-1 max-w-lg">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Search for moments..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-100 placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all text-sm"
+                  />
+                </div>
+                <button
+                  onClick={handleSearch}
+                  disabled={loading || !searchQuery.trim() || !selectedIndex}
+                  className="px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {loading ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Index Selection */}
+          <div className="flex items-center gap-3">
+            {searchResults.length > 0 && (
+              <div className="text-xs text-gray-400">
+                {searchResults.length} moments, {new Set(searchResults.map(r => r.metadata?.video_id)).size} videos
+              </div>
+            )}
+            <div className="w-64">
+              <IndexSelector
+                selectedIndex={selectedIndex}
+                onIndexSelect={setSelectedIndex}
+                className="w-full"
+                placeholder="Select index..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Flow Canvas */}
+        <div className="flex-1 relative">
+          {/* Global pause button */}
+          {activeVideoPlayer && (
+            <div className="absolute top-4 right-4 z-50">
+              <button
+                onClick={() => {
+                  pauseAllVideos();
+                  setActiveVideoPlayer(null);
+                  setSelectedVideo(null);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-full shadow-lg flex items-center gap-2 transition-colors border-2 border-white"
+                title="Stop all video playback"
+              >
+                <div className="w-3 h-3 bg-white rounded-sm"></div>
+                <span className="font-medium">STOP</span>
+              </button>
+            </div>
+          )}
+          
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            nodeTypes={nodeTypes}
+            connectionMode={ConnectionMode.Loose}
+            defaultViewport={{ x: -200, y: 0, zoom: 0.6 }}
+            className="bg-gray-900"
+          >
+            <Background color="#6366f1" gap={20} />
+            <Controls />
+            <MiniMap 
+              nodeColor={(node) => node.id.startsWith('video-') ? '#667eea' : '#f093fb'}
+              className="bg-gray-800"
+            />
+          </ReactFlow>
+
+          {/* Empty State */}
+          {!selectedIndex && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-white mb-2">
+                  Select an Index to Start
+                </h3>
+                <p className="text-gray-400">
+                  Choose an index and search to see video moments as connected nodes
+                </p>
+              </div>
+            </div>
+          )}
+
+          {selectedIndex && searchResults.length === 0 && !loading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-white mb-2">
+                  Search to Explore
+                </h3>
+                <p className="text-gray-400">
+                  Enter a search query to visualize video moments as connected nodes
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Error Display */}
         {error && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+          <div className="absolute bottom-4 right-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-300 max-w-md">
             {error}
-          </div>
-        )}
-
-        {/* No Results */}
-        {searchResults.length === 0 && searchQuery && !loading && !error && (
-          <div className="text-center py-12">
-            <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No moments found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Try adjusting your search terms or make sure videos are uploaded and indexed.
-            </p>
           </div>
         )}
       </div>

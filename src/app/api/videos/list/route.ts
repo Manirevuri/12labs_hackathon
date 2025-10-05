@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { twelveLabsClient } from '@/lib/twelvelabs';
+import { isUserIndexOwner } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
   try {
+    // Get authenticated user
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const indexId = searchParams.get('indexId');
 
@@ -10,6 +22,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'Index ID is required' },
         { status: 400 }
+      );
+    }
+
+    // Check if user owns this index
+    const isOwner = await isUserIndexOwner(userId, indexId);
+    if (!isOwner) {
+      return NextResponse.json(
+        { error: 'You do not have access to this index' },
+        { status: 403 }
       );
     }
 
@@ -39,9 +60,9 @@ export async function GET(request: NextRequest) {
         size: video.systemMetadata?.size,
         createdAt: video.createdAt,
         updatedAt: video.updatedAt,
-        thumbnailUrl: video.hls?.thumbnail_urls?.[0], // Get first thumbnail
-        videoUrl: video.hls?.video_url,
-        hlsStatus: video.hls?.status,
+        thumbnailUrl: (video as any).hls?.thumbnail_urls?.[0], // Get first thumbnail
+        videoUrl: (video as any).hls?.video_url,
+        hlsStatus: (video as any).hls?.status,
       };
     });
 

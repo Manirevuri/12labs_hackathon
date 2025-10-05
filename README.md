@@ -44,27 +44,9 @@ The system integrates external business documents (brand guidelines, product spe
 
 ### Key Innovations
 
-1. **Stateful Context Tracking**: Maintains conversation state across multi-turn interactions
-2. **Custom Graph Prompt Pipelines**: Overcomes API context length limitations
-3. **Smart Context Engineering**: Handles video context length constraints efficiently
-4. **Memory Compounding**: Reuses video memory across campaigns, teams, and platforms
-
-## 🚀 Quick Start
-
-```bash
-# Coming soon: Install via pip
-pip install memvai
-
-# Or via npm
-npm install memvai
-```
-
-## 📊 Performance
-
-- **40x Speed Improvement**: From 30+ seconds to <100ms
-- **99% Cost Reduction**: Query existing memory instead of re-processing
-- **500+ Graph Nodes**: Created from 20+ videos in first prototype
-- **2000+ Relationships**: Mapped in initial testing phase
+1. **Custom Graph Prompt Pipelines**: Overcomes API context length limitations
+2. **Smart Context Engineering**: Handles video context length constraints efficiently
+3. **Memory Compounding**: Reuses video memory across campaigns, teams, and platforms
 
 ## 🎯 Use Cases
 

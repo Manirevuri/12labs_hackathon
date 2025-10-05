@@ -153,9 +153,9 @@ export default function ChatPage() {
             type: 'bezier',
             animated: true,
             style: { 
-              stroke: '#6366f1', 
+              stroke: '#ffffff', 
               strokeWidth: 2,
-              strokeOpacity: 0.7 
+              strokeOpacity: 0.6 
             }
           };
           console.log('Creating edge:', edge.source, '->', edge.target);

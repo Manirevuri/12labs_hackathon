@@ -466,7 +466,7 @@ export default function ChatPage() {
             className="bg-gray-900"
           >
             <Background color="#6366f1" gap={20} />
-            <Controls />
+            <Controls position="middle-center" />
             <MiniMap 
               nodeColor={(node) => node.id.startsWith('video-') ? '#667eea' : '#f093fb'}
               className="bg-gray-800"

@@ -150,12 +150,12 @@ export default function ChatPage() {
             id: `edge-${videoId}-${moment.id}-${randomMomentId}`,
             source: videoNodeId,
             target: `moment-${moment.id}-${randomMomentId}`,
-            type: 'smoothstep',
+            type: 'bezier',
             animated: true,
             style: { 
               stroke: '#6366f1', 
-              strokeWidth: 3,
-              strokeOpacity: 0.8 
+              strokeWidth: 2,
+              strokeOpacity: 0.7 
             }
           };
           console.log('Creating edge:', edge.source, '->', edge.target);

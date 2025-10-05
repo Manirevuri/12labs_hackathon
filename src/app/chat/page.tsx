@@ -30,6 +30,7 @@ interface SearchResult {
     video_id: string;
     filename: string;
     duration: number;
+    video_url?: string;
   };
   thumbnailUrl?: string;
 }
@@ -187,20 +188,20 @@ export default function ChatPage() {
       const videoNode = nodes.find(n => n.id.startsWith('video-') && 
         edges.some(e => e.source === n.id && e.target === node.id));
       
-      if (videoNode?.data.videoUrl) {
+      if (videoNode?.data.videoUrl && typeof videoNode.data.videoUrl === 'string') {
         setSelectedVideo({
           nodeId: videoNode.id, // Use the specific video node ID
-          url: videoNode.data.videoUrl,
-          startTime: node.data.start || 0,
-          endTime: node.data.end || node.data.start + 10 // Default to 10 seconds if no end time
+          url: videoNode.data.videoUrl as string,
+          startTime: typeof node.data.start === 'number' ? node.data.start : 0,
+          endTime: typeof node.data.end === 'number' ? node.data.end : (typeof node.data.start === 'number' ? node.data.start + 10 : 10)
         });
       }
     }
     // If clicking a video node, play the full video
-    else if (node.id.startsWith('video-') && node.data.videoUrl) {
+    else if (node.id.startsWith('video-') && node.data.videoUrl && typeof node.data.videoUrl === 'string') {
       setSelectedVideo({
         nodeId: node.id, // Use the specific video node ID
-        url: node.data.videoUrl,
+        url: node.data.videoUrl as string,
         startTime: 0,
         endTime: Infinity // Play full video
       });

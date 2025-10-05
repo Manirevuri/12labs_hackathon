@@ -43,6 +43,7 @@ export default function ChatPage() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedVideo, setSelectedVideo] = useState<{nodeId: string, url: string, startTime: number, endTime: number} | null>(null);
+  const [activeVideoPlayer, setActiveVideoPlayer] = useState<{videoId: string, url: string, nodeId: string} | null>(null);
 
   const { loading, error, searchVideos } = useTwelveLabs();
 
@@ -122,6 +123,8 @@ export default function ChatPage() {
           const x = embeddingX; // Position with proper spacing from video
           const y = startY + (momentIndex * nodeSpacing);
 
+          console.log('Moment thumbnail URL:', moment.thumbnailUrl, 'for moment:', moment.id);
+
           const momentNode = {
             id: `moment-${moment.id}-${randomMomentId}`,
             type: 'default',
@@ -182,13 +185,31 @@ export default function ChatPage() {
     [setEdges]
   );
 
+  // Function to pause all videos
+  const pauseAllVideos = useCallback(() => {
+    const videos = document.querySelectorAll('video');
+    videos.forEach(video => {
+      video.pause();
+    });
+  }, []);
+
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    // Pause all videos first
+    pauseAllVideos();
+    
     // If clicking an embedding node, set video to play from that timestamp
     if (node.id.startsWith('moment-')) {
       const videoNode = nodes.find(n => n.id.startsWith('video-') && 
         edges.some(e => e.source === n.id && e.target === node.id));
       
       if (videoNode?.data.videoUrl && typeof videoNode.data.videoUrl === 'string') {
+        // Set the active video player to show in the main video node
+        setActiveVideoPlayer({
+          videoId: videoNode.data.videoId as string,
+          url: videoNode.data.videoUrl as string,
+          nodeId: videoNode.id
+        });
+        
         setSelectedVideo({
           nodeId: videoNode.id, // Use the specific video node ID
           url: videoNode.data.videoUrl as string,
@@ -199,14 +220,23 @@ export default function ChatPage() {
     }
     // If clicking a video node, play the full video
     else if (node.id.startsWith('video-') && node.data.videoUrl && typeof node.data.videoUrl === 'string') {
+      console.log('Clicking video node:', node.id, 'setting activeVideoPlayer to:', node.id);
+      
+      // Set the active video player to show in this video node
+      setActiveVideoPlayer({
+        videoId: node.data.videoId as string,
+        url: node.data.videoUrl as string,
+        nodeId: node.id
+      });
+      
       setSelectedVideo({
         nodeId: node.id, // Use the specific video node ID
         url: node.data.videoUrl as string,
         startTime: 0,
-        endTime: Infinity // Play full video
+        endTime: -1 // Use -1 to indicate full video (no auto-pause)
       });
     }
-  }, [nodes, edges]);
+  }, [nodes, edges, pauseAllVideos]);
 
   // Custom node types
   const nodeTypes = useMemo(() => ({
@@ -214,38 +244,47 @@ export default function ChatPage() {
       const isVideo = id.startsWith('video-');
       
       if (isVideo) {
+        console.log('Video node rendering:', id, 'activeVideoPlayer:', activeVideoPlayer?.nodeId, 'matches:', activeVideoPlayer?.nodeId === id);
         return (
           <div className="relative rounded-lg shadow-2xl" style={{ width: 570, height: 420 }}>
-            <div className="relative bg-gray-900 text-white rounded-lg border border-gray-700 shadow-xl overflow-hidden w-full h-full">
+            <div className="relative bg-gray-900 text-white rounded-lg border border-gray-700 shadow-xl w-full h-full">
               <Handle
                 type="source"
                 position={Position.Right}
                 style={{ background: '#6b7280', width: 12, height: 12 }}
               />
               {data.videoUrl ? (
-                <video
-                  key={`${id}-${selectedVideo?.startTime || 0}`}
-                  className="w-full h-full object-cover"
-                  controls
-                  autoPlay={selectedVideo?.nodeId === id}
-                  src={data.videoUrl}
-                  onLoadedMetadata={(e) => {
-                    const video = e.target as HTMLVideoElement;
-                    if (selectedVideo?.nodeId === id && selectedVideo?.startTime) {
-                      video.currentTime = selectedVideo.startTime;
-                    }
-                  }}
-                  onTimeUpdate={(e) => {
-                    const video = e.target as HTMLVideoElement;
-                    // Pause video when it reaches the end time of the selected segment
-                    if (selectedVideo?.nodeId === id && 
-                        selectedVideo?.endTime !== Infinity && 
-                        video.currentTime >= selectedVideo.endTime) {
-                      video.pause();
-                      video.currentTime = selectedVideo.startTime; // Reset to start of segment
-                    }
-                  }}
-                />
+                <div className="w-full h-full relative rounded-lg">
+                  <video
+                    key={`player-${data.videoId}`}
+                    className="w-full h-full object-cover rounded-lg"
+                    controls
+                    controlsList="nodownload"
+                    preload="metadata"
+                    src={data.videoUrl}
+                    style={{ 
+                      zIndex: 1,
+                      outline: 'none'
+                    }}
+                    onLoadedMetadata={(e) => {
+                      const video = e.target as HTMLVideoElement;
+                      if (selectedVideo?.nodeId === id && typeof selectedVideo.startTime === 'number') {
+                        video.currentTime = selectedVideo.startTime;
+                        // Don't auto-play, just load to the correct time
+                      }
+                    }}
+                    onTimeUpdate={(e) => {
+                      const video = e.target as HTMLVideoElement;
+                      // Only pause for specific segments (endTime > 0), not full video (endTime = -1)
+                      if (selectedVideo?.nodeId === id && 
+                          selectedVideo?.endTime > 0 && 
+                          video.currentTime >= selectedVideo.endTime) {
+                        video.pause();
+                        video.currentTime = selectedVideo.startTime; // Reset to start of segment
+                      }
+                    }}
+                  />
+                </div>
               ) : (
                 <div className="p-4 flex flex-col items-center justify-center h-full">
                   <Video className="h-8 w-8 mb-2" />
@@ -274,13 +313,36 @@ export default function ChatPage() {
                 style={{ background: '#6b7280', width: 10, height: 10 }}
               />
               
-              {/* Thumbnail image as background */}
-              {data.thumbnailUrl && (
+              {/* Video at specific timestamp (no controls) */}
+              {activeVideoPlayer && nodes.find(n => n.id === activeVideoPlayer.nodeId)?.data.videoUrl ? (
+                <video
+                  key={`embedding-${id}-${data.start}`}
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                  preload="metadata"
+                  src={activeVideoPlayer.url}
+                  style={{ pointerEvents: 'none' }}
+                  onLoadedMetadata={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    if (data.start) {
+                      video.currentTime = data.start;
+                    }
+                  }}
+                />
+              ) : data.thumbnailUrl ? (
                 <img 
                   src={data.thumbnailUrl} 
                   alt="Moment thumbnail"
                   className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                  onError={(e) => {
+                    console.log('Thumbnail failed to load:', data.thumbnailUrl);
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
+              ) : (
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-700 to-gray-600 rounded-lg flex items-center justify-center">
+                  <Play className="h-8 w-8 text-gray-400" />
+                </div>
               )}
               
               {/* Content overlay */}
@@ -362,6 +424,24 @@ export default function ChatPage() {
 
         {/* Flow Canvas */}
         <div className="flex-1 relative">
+          {/* Global pause button */}
+          {activeVideoPlayer && (
+            <div className="absolute top-4 right-4 z-50">
+              <button
+                onClick={() => {
+                  pauseAllVideos();
+                  setActiveVideoPlayer(null);
+                  setSelectedVideo(null);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-full shadow-lg flex items-center gap-2 transition-colors border-2 border-white"
+                title="Stop all video playback"
+              >
+                <div className="w-3 h-3 bg-white rounded-sm"></div>
+                <span className="font-medium">STOP</span>
+              </button>
+            </div>
+          )}
+          
           <ReactFlow
             nodes={nodes}
             edges={edges}

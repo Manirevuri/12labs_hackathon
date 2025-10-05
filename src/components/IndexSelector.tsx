@@ -42,15 +42,15 @@ export function IndexSelector({
   const selectedIndexData = indexes.find(index => index.id === selectedIndex);
 
   const getModelBadgeColor = (modelName: string) => {
-    if (modelName.includes('marengo')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-    if (modelName.includes('pegasus')) return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-    return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+    if (modelName.includes('marengo')) return 'bg-blue-900/20 text-blue-400';
+    if (modelName.includes('pegasus')) return 'bg-purple-900/20 text-purple-400';
+    return 'bg-gray-900/20 text-gray-400';
   };
 
   if (loading && indexes.length === 0) {
     return (
       <div className={`relative ${className}`}>
-        <div className="w-full px-3 py-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-500 dark:text-gray-400 text-sm">
+        <div className="w-full px-3 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-400 text-sm">
           Loading indexes...
         </div>
       </div>
@@ -60,7 +60,7 @@ export function IndexSelector({
   if (indexes.length === 0) {
     return (
       <div className={`relative ${className}`}>
-        <div className="w-full px-3 py-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-500 dark:text-gray-400 text-sm">
+        <div className="w-full px-3 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-400 text-sm">
           No indexes available. Create one first.
         </div>
       </div>
@@ -71,13 +71,13 @@ export function IndexSelector({
     <div className={`relative ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-left flex items-center justify-between hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20"
+        className="w-full px-3 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-left flex items-center justify-between hover:bg-gray-900/80 transition-all focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20"
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Database className="h-4 w-4 text-gray-500 flex-shrink-0" />
           {selectedIndexData ? (
             <div className="min-w-0 flex-1">
-              <span className="font-medium text-gray-900 dark:text-white truncate block">
+              <span className="font-medium text-white truncate block">
                 {selectedIndexData.indexName}
               </span>
               <div className="flex gap-1 mt-1">
@@ -92,7 +92,7 @@ export function IndexSelector({
               </div>
             </div>
           ) : (
-            <span className="text-gray-500 dark:text-gray-400 truncate">
+            <span className="text-gray-400 truncate">
               {placeholder}
             </span>
           )}
@@ -101,7 +101,7 @@ export function IndexSelector({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {indexes.map((index) => (
             <button
               key={index.id}
@@ -109,12 +109,12 @@ export function IndexSelector({
                 onIndexSelect(index.id);
                 setIsOpen(false);
               }}
-              className="w-full px-3 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
+              className="w-full px-3 py-3 text-left hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900 dark:text-white truncate">
+                    <span className="font-medium text-white truncate">
                       {index.indexName}
                     </span>
                     {selectedIndex === index.id && (
@@ -133,7 +133,7 @@ export function IndexSelector({
                         </span>
                       ))}
                     </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="text-xs text-gray-400">
                       {index.videoCount || 0} videos
                     </span>
                   </div>

@@ -169,42 +169,42 @@ export default function DashboardPage() {
       title: 'Total Videos',
       value: stats.totalVideos.toString(),
       icon: Video,
-      color: 'from-gray-100 to-gray-200'
+      color: 'from-gray-700 to-gray-800'
     },
     {
       title: 'Total Duration',
       value: formatDuration(stats.totalDuration),
       icon: Clock,
-      color: 'from-gray-100 to-gray-200'
+      color: 'from-gray-700 to-gray-800'
     },
     {
       title: 'Average Duration',
       value: formatDuration(stats.averageDuration),
       icon: Play,
-      color: 'from-gray-100 to-gray-200'
+      color: 'from-gray-700 to-gray-800'
     },
     {
       title: 'Recent Uploads',
       value: stats.recentUploads.toString(),
       icon: Upload,
-      color: 'from-gray-100 to-gray-200'
+      color: 'from-gray-700 to-gray-800'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl shadow-lg">
-              <LayoutDashboard className="h-6 w-6 text-gray-500" />
+              <LayoutDashboard className="h-6 w-6 text-gray-300" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-3xl font-bold text-white">
                 Video Dashboard
               </h1>
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-gray-300">
                 Manage and monitor your video library
               </p>
             </div>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
         {/* Index Selection */}
         <div className="mb-8">
           <div className="max-w-md">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Select Index *
             </label>
             <IndexSelector
@@ -224,12 +224,12 @@ export default function DashboardPage() {
               placeholder="Choose an index to view videos..."
             />
             <div className="mt-2 flex items-center justify-between text-sm">
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-400">
                 Select an index to view its videos and statistics
               </p>
               <Link
                 href="/indexes"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
+                className="text-gray-400 hover:text-white transition-colors font-medium flex items-center gap-1"
               >
                 <Database className="h-3 w-3 text-gray-500" />
                 Manage Indexes
@@ -244,19 +244,19 @@ export default function DashboardPage() {
             {statCards.map((stat, idx) => (
             <div
               key={idx}
-              className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6"
+              className="relative overflow-hidden rounded-2xl bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 p-6"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  <p className="text-sm font-medium text-gray-400">
                     {stat.title}
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                  <p className="text-2xl font-bold text-white mt-1">
                     {stat.value}
                   </p>
                 </div>
                 <div className={`p-3 bg-gradient-to-br ${stat.color} rounded-xl shadow-lg`}>
-                  <stat.icon className="h-4 w-4 text-gray-500" />
+                  <stat.icon className="h-4 w-4 text-gray-300" />
                 </div>
               </div>
             </div>
@@ -275,7 +275,7 @@ export default function DashboardPage() {
               placeholder="Search videos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-100 placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
             />
           </div>
 
@@ -284,7 +284,7 @@ export default function DashboardPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-700 dark:text-gray-300 text-sm focus:border-gray-400 focus:outline-none"
+              className="px-3 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-300 text-sm focus:border-gray-400 focus:outline-none"
             >
               <option value="date">Sort by Date</option>
               <option value="name">Sort by Name</option>
@@ -294,7 +294,7 @@ export default function DashboardPage() {
             
             <button
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className="px-3 py-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-700 dark:text-gray-300 text-sm hover:bg-white/80 dark:hover:bg-gray-900/80 transition-all"
+              className="px-3 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-300 text-sm hover:bg-gray-900/80 transition-all"
             >
               {sortOrder === 'asc' ? '↑' : '↓'}
             </button>
@@ -306,10 +306,10 @@ export default function DashboardPage() {
         {!selectedIndex ? (
           <div className="text-center py-12">
             <Database className="h-8 w-8 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <h3 className="text-lg font-medium text-white mb-2">
               Select an Index
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-400 mb-4">
               Choose an index from the dropdown above to view its videos and statistics.
             </p>
             <Link
@@ -323,40 +323,40 @@ export default function DashboardPage() {
         ) : loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500 mx-auto"></div>
-            <p className="text-gray-600 dark:text-gray-400 mt-4">Loading videos...</p>
+            <p className="text-gray-400 mt-4">Loading videos...</p>
           </div>
         ) : sortedVideos.length > 0 ? (
-          <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50">
+          <div className="relative overflow-hidden rounded-2xl bg-gray-800/60 backdrop-blur-xl border border-gray-700/50">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200/50 dark:border-gray-700/50">
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                  <tr className="border-b border-gray-700/50">
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">
                       Video
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">
                       Duration
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">
                       Resolution
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">
                       Size
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">
                       Uploaded
                     </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <th className="text-left px-6 py-4 text-sm font-medium text-gray-400">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+                <tbody className="divide-y divide-gray-700/50">
                   {sortedVideos.map((video) => (
-                    <tr key={video.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-all">
+                    <tr key={video.id} className="hover:bg-gray-800/50 transition-all">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="relative w-16 h-10 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded overflow-hidden">
+                          <div className="relative w-16 h-10 bg-gradient-to-br from-gray-700 to-gray-600 rounded overflow-hidden">
                             {video.thumbnailUrl ? (
                               <>
                                 <img
@@ -383,17 +383,17 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white truncate max-w-xs">
+                            <p className="font-medium text-white truncate max-w-xs">
                               {video.filename || 'Unnamed Video'}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                            <p className="text-xs text-gray-400">
                               ID: {video.id?.slice(0, 8) || 'N/A'}...
                             </p>
                             {video.hlsStatus && (
                               <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium mt-1 ${
                                 video.hlsStatus === 'COMPLETE' 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                  ? 'bg-green-900/20 text-green-400'
+                                  : 'bg-yellow-900/20 text-yellow-400'
                               }`}>
                                 {video.hlsStatus}
                               </span>
@@ -401,16 +401,16 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-6 py-4 text-sm text-gray-300">
                         {formatDuration(video.duration || 0)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-6 py-4 text-sm text-gray-300">
                         {video.width && video.height ? `${video.width}×${video.height}` : 'Unknown'}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-6 py-4 text-sm text-gray-300">
                         {formatFileSize(video.size)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <td className="px-6 py-4 text-sm text-gray-300">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3 text-gray-500" />
                           {formatDate(video.createdAt)}
@@ -418,10 +418,10 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                          <button className="p-2 text-gray-400 hover:text-gray-300 transition-colors">
                             <Search className="h-3 w-3 text-gray-500" />
                           </button>
-                          <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                          <button className="p-2 text-gray-400 hover:text-gray-300 transition-colors">
                             <Film className="h-3 w-3 text-gray-500" />
                           </button>
                           <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
@@ -438,10 +438,10 @@ export default function DashboardPage() {
         ) : (
           <div className="text-center py-12">
             <Video className="h-8 w-8 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <h3 className="text-lg font-medium text-white mb-2">
               No videos found
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-400 mb-4">
               {searchTerm ? 'No videos match your search.' : 'Upload some videos to get started.'}
             </p>
             {!searchTerm && (
@@ -454,7 +454,7 @@ export default function DashboardPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+          <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-300">
             {error}
           </div>
         )}

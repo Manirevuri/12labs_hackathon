@@ -77,7 +77,7 @@ export default function SearchPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="text-center mb-12">
@@ -86,10 +86,10 @@ export default function SearchPage() {
               <Search className="h-8 w-8 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-3xl font-bold text-white mb-4">
             Search Video Moments
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             Use natural language to find exact moments across your entire video library. 
             Describe what you're looking for and AI will find the matching scenes.
           </p>
@@ -98,7 +98,7 @@ export default function SearchPage() {
         {/* Index Selection */}
         <div className="mb-8">
           <div className="max-w-md mx-auto">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Select Index *
             </label>
             <IndexSelector
@@ -108,12 +108,12 @@ export default function SearchPage() {
               placeholder="Choose an index to search..."
             />
             <div className="mt-2 flex items-center justify-between text-sm">
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-400">
                 Search will be performed within the selected index
               </p>
               <Link
                 href="/indexes"
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors font-medium flex items-center gap-1"
+                className="text-gray-400 hover:text-white transition-colors font-medium flex items-center gap-1"
               >
                 <Database className="h-4 w-4" />
                 Manage Indexes
@@ -125,7 +125,7 @@ export default function SearchPage() {
         {/* Search Interface */}
         {selectedIndex && (
           <div className="mb-8">
-            <div className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 p-6">
+            <div className="relative overflow-hidden rounded-2xl bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 p-6">
             {/* Search Input */}
             <div className="flex gap-3 mb-4">
               <div className="flex-1 relative">
@@ -136,7 +136,7 @@ export default function SearchPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-100 placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
                 />
               </div>
               <button
@@ -152,7 +152,7 @@ export default function SearchPage() {
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">Search in:</span>
+                <span className="text-gray-400">Search in:</span>
               </div>
               
               <label className="flex items-center gap-2 cursor-pointer">
@@ -168,7 +168,7 @@ export default function SearchPage() {
                   }}
                   className="rounded border-gray-300"
                 />
-                <span className="text-gray-700 dark:text-gray-300">Visual</span>
+                <span className="text-gray-300">Visual</span>
               </label>
               
               <label className="flex items-center gap-2 cursor-pointer">
@@ -184,13 +184,13 @@ export default function SearchPage() {
                   }}
                   className="rounded border-gray-300"
                 />
-                <span className="text-gray-700 dark:text-gray-300">Audio</span>
+                <span className="text-gray-300">Audio</span>
               </label>
 
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'relevance' | 'duration')}
-                className="px-3 py-1 bg-white/60 dark:bg-gray-900/60 border border-gray-200/50 dark:border-gray-700/50 rounded text-gray-700 dark:text-gray-300 text-sm"
+                className="px-3 py-1 bg-gray-900/60 border border-gray-700/50 rounded text-gray-300 text-sm"
               >
                 <option value="relevance">Sort by Relevance</option>
                 <option value="duration">Sort by Duration</option>
@@ -203,7 +203,7 @@ export default function SearchPage() {
         {/* Example Queries */}
         {selectedIndex && searchResults.length === 0 && !loading && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3 className="text-lg font-semibold text-white mb-4">
               Try these example searches:
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -211,7 +211,7 @@ export default function SearchPage() {
                 <button
                   key={idx}
                   onClick={() => setSearchQuery(query)}
-                  className="text-left p-3 bg-white/40 dark:bg-gray-800/40 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 rounded-lg hover:bg-white/60 dark:hover:bg-gray-800/60 transition-all text-gray-700 dark:text-gray-300"
+                  className="text-left p-3 bg-gray-800/40 backdrop-blur-lg border border-gray-700/50 rounded-lg hover:bg-gray-800/60 transition-all text-gray-300"
                 >
                   "{query}"
                 </button>
@@ -223,7 +223,7 @@ export default function SearchPage() {
         {/* Search History */}
         {searchHistory.length > 0 && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h3 className="text-lg font-semibold text-white mb-4">
               Recent Searches:
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -231,7 +231,7 @@ export default function SearchPage() {
                 <button
                   key={idx}
                   onClick={() => setSearchQuery(query)}
-                  className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                  className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-sm hover:bg-gray-700 transition-all"
                 >
                   {query}
                 </button>
@@ -244,7 +244,7 @@ export default function SearchPage() {
         {searchResults.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold text-white">
                 Found {searchResults.length} moments
               </h2>
             </div>
@@ -253,10 +253,10 @@ export default function SearchPage() {
               {sortedResults.map((result, idx) => (
                 <div
                   key={`${result.id}-${idx}`}
-                  className="relative overflow-hidden rounded-xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 hover:shadow-lg transition-all group"
+                  className="relative overflow-hidden rounded-xl bg-gray-800/60 backdrop-blur-xl border border-gray-700/50 hover:shadow-lg transition-all group"
                 >
                   {/* Thumbnail */}
-                  <div className="relative h-48 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center overflow-hidden">
+                  <div className="relative h-48 bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center overflow-hidden">
                     {result.thumbnailUrl ? (
                       <img 
                         src={result.thumbnailUrl}
@@ -281,11 +281,11 @@ export default function SearchPage() {
 
                   {/* Content */}
                   <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 truncate">
+                    <h3 className="font-semibold text-white mb-2 truncate">
                       {result.metadata?.filename || 'Unknown Video'}
                     </h3>
                     
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
                       <Clock className="h-4 w-4" />
                       <span>
                         {formatTime(result.start)} - {formatTime(result.end)}
@@ -295,7 +295,7 @@ export default function SearchPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 text-yellow-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <span className="text-sm font-medium text-gray-300">
                           {result.score.toFixed(1)}%
                         </span>
                       </div>
@@ -313,7 +313,7 @@ export default function SearchPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
+          <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-300">
             {error}
           </div>
         )}
@@ -322,10 +322,10 @@ export default function SearchPage() {
         {searchResults.length === 0 && searchQuery && !loading && !error && (
           <div className="text-center py-12">
             <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <h3 className="text-lg font-medium text-white mb-2">
               No moments found
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-400">
               Try adjusting your search terms or make sure videos are uploaded and indexed.
             </p>
           </div>

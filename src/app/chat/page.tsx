@@ -32,31 +32,13 @@ interface SearchResult {
   thumbnailUrl?: string;
 }
 
-interface VideoNode extends Node {
-  data: {
-    filename: string;
-    videoId: string;
-    totalResults: number;
-    thumbnailUrl?: string;
-  };
-}
-
-interface MomentNode extends Node {
-  data: {
-    start: number;
-    end: number;
-    score: number;
-    videoId: string;
-    thumbnailUrl?: string;
-  };
-}
 
 export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   const { loading, error, searchVideos } = useTwelveLabs();
 
@@ -84,8 +66,8 @@ export default function ChatPage() {
       }, {} as Record<string, SearchResult[]>);
 
       // Create nodes and edges for each individual embedding
-      const newNodes: Node[] = [];
-      const newEdges: Edge[] = [];
+      const newNodes = [];
+      const newEdges = [];
       
       let yOffset = 0;
       const videoSpacing = 300;
@@ -94,7 +76,7 @@ export default function ChatPage() {
         const randomVideoId = Math.random().toString(36).substring(7);
         
         // Create video root node (center)
-        const videoNode: Node = {
+        const videoNode = {
           id: `video-${videoId}-${randomVideoId}`,
           type: 'default',
           position: { x: 400, y: yOffset + 150 },
@@ -128,7 +110,7 @@ export default function ChatPage() {
           const x = 400 + radius * Math.cos(angle);
           const y = yOffset + 150 + radius * Math.sin(angle);
 
-          const momentNode: Node = {
+          const momentNode = {
             id: `moment-${moment.id}-${randomMomentId}`,
             type: 'default',
             position: { x, y },
@@ -152,7 +134,7 @@ export default function ChatPage() {
           newNodes.push(momentNode);
 
           // Create edge from video to each individual embedding with unique ID
-          const edge: Edge = {
+          const edge = {
             id: `edge-${videoId}-${moment.id}-${randomMomentId}`,
             source: `video-${videoId}-${randomVideoId}`,
             target: `moment-${moment.id}-${randomMomentId}`,
@@ -231,19 +213,19 @@ export default function ChatPage() {
   }), []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       <div className="h-screen flex flex-col">
         {/* Header */}
-        <div className="p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50">
+        <div className="p-6 bg-gray-800/80 backdrop-blur-xl border-b border-gray-700/50">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl shadow-lg">
-              <MessageCircle className="h-6 w-6 text-gray-500" />
+              <MessageCircle className="h-6 w-6 text-gray-300" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl font-bold text-white">
                 Video Search Flow
               </h1>
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-gray-300">
                 Search videos and explore results as connected nodes
               </p>
             </div>
@@ -251,7 +233,7 @@ export default function ChatPage() {
 
           {/* Index Selection */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Select Index *
             </label>
             <div className="max-w-md">
@@ -275,7 +257,7 @@ export default function ChatPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="w-full pl-10 pr-4 py-3 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-100 placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
                 />
               </div>
               <button
@@ -290,7 +272,7 @@ export default function ChatPage() {
 
           {/* Results Summary */}
           {searchResults.length > 0 && (
-            <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+            <div className="mt-4 text-sm text-gray-400">
               Found {searchResults.length} moments across {new Set(searchResults.map(r => r.metadata?.video_id)).size} videos
             </div>
           )}
@@ -307,13 +289,13 @@ export default function ChatPage() {
             nodeTypes={nodeTypes}
             connectionMode={ConnectionMode.Loose}
             fitView
-            className="bg-gray-50 dark:bg-gray-900"
+            className="bg-gray-900"
           >
             <Background color="#6366f1" gap={20} />
             <Controls />
             <MiniMap 
               nodeColor={(node) => node.id.startsWith('video-') ? '#667eea' : '#f093fb'}
-              className="bg-white dark:bg-gray-800"
+              className="bg-gray-800"
             />
           </ReactFlow>
 
@@ -322,10 +304,10 @@ export default function ChatPage() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <h3 className="text-lg font-medium text-white mb-2">
                   Select an Index to Start
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-400">
                   Choose an index and search to see video moments as connected nodes
                 </p>
               </div>
@@ -336,10 +318,10 @@ export default function ChatPage() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <h3 className="text-lg font-medium text-white mb-2">
                   Search to Explore
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-400">
                   Enter a search query to visualize video moments as connected nodes
                 </p>
               </div>
@@ -349,7 +331,7 @@ export default function ChatPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="absolute bottom-4 right-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 max-w-md">
+          <div className="absolute bottom-4 right-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-300 max-w-md">
             {error}
           </div>
         )}

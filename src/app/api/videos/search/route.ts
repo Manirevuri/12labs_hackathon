@@ -36,28 +36,26 @@ export async function POST(request: NextRequest) {
       pageLimit: 10,
     });
 
-    console.log('Raw search results:', JSON.stringify(searchResults, null, 2));
-    console.log('Search results data length:', searchResults.data?.length);
+    // DO NOT stringify searchResults - it contains non-serializable objects
+    console.log('Search completed, data length:', searchResults.data?.length);
 
-    const formattedResults = searchResults.data?.map((result) => {
-      console.log('Processing search result:', JSON.stringify(result, null, 2));
+    const formattedResults = searchResults.data?.map((result: any) => {
+      // Use safe property access with defaults
       return {
-        id: result.id || result.videoId,
-        score: result.score,
-        start: result.start,
-        end: result.end,
+        id: result.id || result.video_id || Math.random().toString(36).substring(7),
+        score: result.score || 0,
+        start: result.start || 0,
+        end: result.end || 0,
         metadata: {
-          video_id: result.videoId,
-          filename: result.filename || `Video ${result.videoId}`,
-          duration: result.end - result.start,
+          video_id: result.video_id || result.videoId || 'unknown',
+          filename: result.metadata?.filename || `Video ${result.video_id || result.videoId || 'unknown'}`,
+          duration: (result.end || 0) - (result.start || 0),
           transcription: result.transcription,
           confidence: result.confidence
         },
-        thumbnailUrl: result.thumbnailUrl,
+        thumbnailUrl: result.thumbnail_url || result.thumbnailUrl,
       };
     });
-
-    console.log('Formatted search results:', JSON.stringify(formattedResults, null, 2));
 
     return NextResponse.json({
       results: formattedResults || [],

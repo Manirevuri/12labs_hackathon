@@ -12,7 +12,9 @@ import {
   Background,
   MiniMap,
   Connection,
-  ConnectionMode
+  ConnectionMode,
+  Handle,
+  Position
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Search, MessageCircle, Video, Play, Star } from 'lucide-react';
@@ -37,8 +39,8 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const { loading, error, searchVideos } = useTwelveLabs();
 
@@ -66,8 +68,8 @@ export default function ChatPage() {
       }, {} as Record<string, SearchResult[]>);
 
       // Create nodes and edges for each individual embedding
-      const newNodes = [];
-      const newEdges = [];
+      const newNodes: Node[] = [];
+      const newEdges: Edge[] = [];
       
       let yOffset = 0;
       const videoSpacing = 300;
@@ -76,8 +78,10 @@ export default function ChatPage() {
         const randomVideoId = Math.random().toString(36).substring(7);
         
         // Create video root node (center)
+        const videoNodeId = `video-${videoId}-${randomVideoId}`;
+        console.log('Creating video node:', videoNodeId);
         const videoNode = {
-          id: `video-${videoId}-${randomVideoId}`,
+          id: videoNodeId,
           type: 'default',
           position: { x: 400, y: yOffset + 150 },
           data: {
@@ -100,15 +104,14 @@ export default function ChatPage() {
         };
         newNodes.push(videoNode);
 
-        // Create individual embedding nodes in a circle around the video
-        const radius = 150;
-        const angleStep = (2 * Math.PI) / moments.length;
+        // Create individual embedding nodes in a vertical column to the right of the video
+        const nodeSpacing = 80; // Vertical spacing between moment nodes
+        const startY = yOffset + 50; // Start above the video center
         
         moments.forEach((moment, momentIndex) => {
           const randomMomentId = Math.random().toString(36).substring(7);
-          const angle = momentIndex * angleStep;
-          const x = 400 + radius * Math.cos(angle);
-          const y = yOffset + 150 + radius * Math.sin(angle);
+          const x = 650; // Fixed X position to the right of video
+          const y = startY + (momentIndex * nodeSpacing);
 
           const momentNode = {
             id: `moment-${moment.id}-${randomMomentId}`,
@@ -134,24 +137,29 @@ export default function ChatPage() {
           newNodes.push(momentNode);
 
           // Create edge from video to each individual embedding with unique ID
-          const edge = {
+          const edge: Edge = {
             id: `edge-${videoId}-${moment.id}-${randomMomentId}`,
-            source: `video-${videoId}-${randomVideoId}`,
+            source: videoNodeId,
             target: `moment-${moment.id}-${randomMomentId}`,
             type: 'smoothstep',
+            animated: true,
             style: { 
               stroke: '#6366f1', 
-              strokeWidth: 2,
-              strokeOpacity: 0.6 
-            },
-            animated: true
+              strokeWidth: 3,
+              strokeOpacity: 0.8 
+            }
           };
+          console.log('Creating edge:', edge.source, '->', edge.target);
           newEdges.push(edge);
         });
 
-        yOffset += videoSpacing + (moments.length > 6 ? 250 : 200);
+        // Calculate spacing based on number of moment nodes in vertical layout
+        const momentHeight = moments.length * 80; // nodeSpacing * number of moments
+        yOffset += Math.max(videoSpacing, momentHeight + 100); // Ensure enough space for all moments
       });
 
+      console.log('Setting nodes:', newNodes.length, 'nodes');
+      console.log('Setting edges:', newEdges.length, 'edges');
       setNodes(newNodes);
       setEdges(newEdges);
     } catch (err) {
@@ -171,7 +179,12 @@ export default function ChatPage() {
       
       if (isVideo) {
         return (
-          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-lg border border-blue-400 shadow-md">
+          <div className="relative p-2 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-lg border border-blue-400 shadow-md">
+            <Handle
+              type="source"
+              position={Position.Right}
+              style={{ background: '#6366f1' }}
+            />
             <div className="flex items-center gap-1 mb-1">
               <Video className="h-3 w-3" />
               <span className="font-bold text-xs truncate">{data.filename}</span>
@@ -183,7 +196,12 @@ export default function ChatPage() {
         );
       } else {
         return (
-          <div className="p-1 bg-gradient-to-br from-pink-500 to-red-500 text-white rounded border border-pink-400 shadow-sm">
+          <div className="relative p-1 bg-gradient-to-br from-pink-500 to-red-500 text-white rounded border border-pink-400 shadow-sm">
+            <Handle
+              type="target"
+              position={Position.Left}
+              style={{ background: '#ec4899' }}
+            />
             <div className="flex items-center gap-1 mb-1">
               <Play className="h-2 w-2" />
               <span className="text-xs font-medium">

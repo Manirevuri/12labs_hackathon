@@ -158,3 +158,32 @@ export async function removeUserIndex(userId: string, indexId: string) {
     return false;
   }
 }
+
+// Video analysis caching functions
+export async function storeVideoAnalysis(videoId: string, analysis: any) {
+  try {
+    const cacheKey = `${videoId}_analyze`;
+    // Store with 7-day expiration
+    await redisClient.setEx(cacheKey, 7 * 24 * 60 * 60, JSON.stringify(analysis));
+    console.log(`Stored analysis for video ${videoId}`);
+    return true;
+  } catch (error) {
+    console.error('Error storing video analysis:', error);
+    return false;
+  }
+}
+
+export async function getVideoAnalysis(videoId: string): Promise<any | null> {
+  try {
+    const cacheKey = `${videoId}_analyze`;
+    const analysis = await redisClient.get(cacheKey);
+    if (analysis) {
+      console.log(`Retrieved cached analysis for video ${videoId}`);
+      return JSON.parse(analysis);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting video analysis:', error);
+    return null;
+  }
+}

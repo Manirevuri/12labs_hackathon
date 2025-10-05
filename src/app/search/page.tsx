@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { 
   ReactFlow, 
   Node, 
@@ -17,9 +17,11 @@ import {
   Position
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Search, MessageCircle, Video, Play, Star } from 'lucide-react';
+import { Search, MessageCircle, Video, Play, Star, Brain, Bot } from 'lucide-react';
 import { useTwelveLabs } from '@/lib/hooks/useTwelveLabs';
 import { IndexSelector } from '@/components/IndexSelector';
+import VideoAnalysisGraph from '@/components/VideoAnalysisGraph';
+import ChatBot from '@/components/ChatBot';
 
 interface SearchResult {
   id: string;
@@ -44,6 +46,9 @@ export default function ChatPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedVideo, setSelectedVideo] = useState<{nodeId: string, url: string, startTime: number, endTime: number} | null>(null);
   const [activeVideoPlayer, setActiveVideoPlayer] = useState<{videoId: string, url: string, nodeId: string} | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [analysisVideoId, setAnalysisVideoId] = useState<string | null>(null);
+  const [analysisTab, setAnalysisTab] = useState<'analysis' | 'chat'>('analysis');
 
   const { loading, error, searchVideos } = useTwelveLabs();
 
@@ -293,9 +298,31 @@ export default function ChatPage() {
                       }
                     }}
                   />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAnalysisVideoId(data.videoId);
+                      setShowAnalysis(true);
+                    }}
+                    className="absolute top-3 right-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center gap-2 transition-colors shadow-lg z-20"
+                  >
+                    <Brain className="h-4 w-4" />
+                    Analyze
+                  </button>
                 </div>
               ) : (
-                <div className="p-4 flex flex-col items-center justify-center h-full">
+                <div className="relative p-4 flex flex-col items-center justify-center h-full">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAnalysisVideoId(data.videoId);
+                      setShowAnalysis(true);
+                    }}
+                    className="absolute top-3 right-3 px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm flex items-center gap-2 transition-colors shadow-lg z-20"
+                  >
+                    <Brain className="h-4 w-4" />
+                    Analyze
+                  </button>
                   <Video className="h-8 w-8 mb-2" />
                   <span className="font-bold text-sm text-center">{data.filename}</span>
                   <div className="text-xs opacity-90 mt-1">
@@ -323,23 +350,27 @@ export default function ChatPage() {
               />
               
               {/* Video at specific timestamp (no controls) */}
-              {nodes.find(n => n.id.startsWith('video-') && 
-                edges.some(e => e.source === n.id && e.target === id))?.data.videoUrl ? (
-                <video
-                  key={`embedding-${id}-${data.start}`}
-                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
-                  preload="metadata"
-                  src={nodes.find(n => n.id.startsWith('video-') && 
-                    edges.some(e => e.source === n.id && e.target === id))?.data.videoUrl}
-                  style={{ pointerEvents: 'none' }}
-                  onLoadedMetadata={(e) => {
-                    const video = e.target as HTMLVideoElement;
-                    if (data.start) {
-                      video.currentTime = data.start;
-                    }
-                  }}
-                />
-              ) : data.thumbnailUrl ? (
+              {(() => {
+                const sourceNode = nodes.find(n => n.id.startsWith('video-') && 
+                  edges.some(e => e.source === n.id && e.target === id));
+                const videoUrl = sourceNode?.data.videoUrl;
+                
+                return videoUrl && typeof videoUrl === 'string' ? (
+                  <video
+                    key={`embedding-${id}-${data.start}`}
+                    className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                    preload="metadata"
+                    src={videoUrl}
+                    style={{ pointerEvents: 'none' }}
+                    onLoadedMetadata={(e) => {
+                      const video = e.target as HTMLVideoElement;
+                      if (data.start) {
+                        video.currentTime = data.start;
+                      }
+                    }}
+                  />
+                ) : null;
+              })() || (data.thumbnailUrl ? (
                 <img 
                   src={data.thumbnailUrl} 
                   alt="Moment thumbnail"
@@ -354,7 +385,8 @@ export default function ChatPage() {
                 <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-gray-700 to-gray-600 rounded-lg flex items-center justify-center">
                   <Play className="h-8 w-8 text-gray-400" />
                 </div>
-              )}
+              ))}
+              
               
               {/* Content overlay */}
               <div className="absolute inset-0 h-full flex flex-col justify-between p-2 z-10">
@@ -466,7 +498,7 @@ export default function ChatPage() {
             className="bg-gray-900"
           >
             <Background color="#6366f1" gap={20} />
-            <Controls position="middle-center" />
+            <Controls  position='PanelPosition.TopLeft'/>
             <MiniMap 
               nodeColor={(node) => node.id.startsWith('video-') ? '#667eea' : '#f093fb'}
               className="bg-gray-800"
@@ -507,6 +539,90 @@ export default function ChatPage() {
         {error && (
           <div className="absolute bottom-4 right-4 p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-300 max-w-md">
             {error}
+          </div>
+        )}
+
+        {/* Analysis Modal */}
+        {showAnalysis && analysisVideoId && selectedIndex && (
+          <div 
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+            onClick={(e) => {
+              // Close modal when clicking outside
+              if (e.target === e.currentTarget) {
+                setShowAnalysis(false);
+                setAnalysisVideoId(null);
+              }
+            }}
+          >
+            <div 
+              className="bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-col h-full">
+                {/* Header with tabs */}
+                <div className="flex-shrink-0 p-6 pb-4 border-b border-gray-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                      <Brain className="h-6 w-6 text-purple-400" />
+                      Video Analysis with Pegasus
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setShowAnalysis(false);
+                        setAnalysisVideoId(null);
+                        setAnalysisTab('analysis');
+                      }}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-all text-2xl font-bold z-10"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {/* Tab Navigation */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setAnalysisTab('analysis')}
+                      className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                        analysisTab === 'analysis'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      <Brain className="h-4 w-4" />
+                      Analysis
+                    </button>
+                    <button
+                      onClick={() => setAnalysisTab('chat')}
+                      className={`px-4 py-2 text-sm rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                        analysisTab === 'chat'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      <Bot className="h-4 w-4" />
+                      Chat
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 overflow-hidden">
+                  {analysisTab === 'analysis' ? (
+                    <VideoAnalysisGraph 
+                      videoId={analysisVideoId} 
+                      indexId={selectedIndex}
+                    />
+                  ) : (
+                    <div className="h-full p-6">
+                      <ChatBot 
+                        videoId={analysisVideoId!}
+                        className="h-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

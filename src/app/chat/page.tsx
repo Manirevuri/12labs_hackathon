@@ -136,8 +136,8 @@ export default function ChatPage() {
               color: 'white',
               border: '1px solid #9ca3af',
               borderRadius: '8px',
-              width: 140,
-              height: 70,
+              width: 180,
+              height: 120,
               fontSize: '10px',
               cursor: 'pointer'
             }
@@ -270,20 +270,34 @@ export default function ChatPage() {
             {/* Subtle glow effect on hover */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg opacity-0 group-hover:opacity-50 blur transition duration-200" />
             
-            <div className="relative px-3 py-2 bg-gradient-to-br from-gray-500 to-gray-600 text-white rounded-lg border border-gray-400 shadow-lg hover:shadow-xl hover:from-gray-600 hover:to-gray-700 transition-all cursor-pointer">
+            <div className="relative bg-gradient-to-br from-gray-500 to-gray-600 text-white rounded-lg border border-gray-400 shadow-lg hover:shadow-xl hover:from-gray-600 hover:to-gray-700 transition-all cursor-pointer overflow-hidden" style={{ width: 180, height: 120 }}>
               <Handle
                 type="target"
                 position={Position.Left}
                 style={{ background: '#6b7280', width: 10, height: 10 }}
               />
-              <div className="flex flex-col space-y-1">
-                <div className="flex items-center gap-1.5">
+              
+              {/* Thumbnail image as background */}
+              {data.thumbnailUrl && (
+                <img 
+                  src={data.thumbnailUrl} 
+                  alt="Moment thumbnail"
+                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                />
+              )}
+              
+              {/* Content overlay */}
+              <div className="relative h-full flex flex-col justify-between p-2 bg-gradient-to-b from-transparent via-gray-900/50 to-gray-900/80">
+                {/* Top section with time */}
+                <div className="flex items-center gap-1.5 bg-gray-900/70 rounded px-2 py-1 backdrop-blur-sm">
                   <Play className="h-3 w-3 flex-shrink-0" />
                   <span className="text-xs font-medium whitespace-nowrap">
                     {formatTime(data.start)} - {formatTime(data.end)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                
+                {/* Bottom section with score */}
+                <div className="flex items-center gap-1.5 bg-gray-900/70 rounded px-2 py-1 backdrop-blur-sm">
                   <Star className="h-3 w-3 text-yellow-300 flex-shrink-0" />
                   <span className="text-xs font-semibold">{data.score.toFixed(0)}% match</span>
                 </div>

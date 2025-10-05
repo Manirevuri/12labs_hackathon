@@ -7,7 +7,6 @@ import { IndexSelector } from '@/components/IndexSelector';
 import {
   Conversation,
   ConversationContent,
-  ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
@@ -93,7 +92,7 @@ export default function ChatBot({ videoId, className = '' }: ChatBotProps) {
       {/* Conversation */}
       <div className="flex-1 flex flex-col min-h-0">
         <Conversation className="flex-1 bg-gray-900 rounded-lg overflow-hidden">
-          <ConversationContent className="p-4 h-full overflow-y-auto">
+          <ConversationContent className="p-4 h-full overflow-y-auto scroll-smooth">
             {messages.length === 0 && (
               <div className="text-center py-8">
                 <Bot className="h-12 w-12 text-gray-500 mx-auto mb-3" />
@@ -123,7 +122,7 @@ export default function ChatBot({ videoId, className = '' }: ChatBotProps) {
                         <Fragment key={`${message.id}-${i}`}>
                           <Message from={message.role}>
                             <MessageContent>
-                              <Response>
+                              <Response className="whitespace-pre-wrap break-words max-w-none prose prose-invert prose-sm">
                                 {part.text}
                               </Response>
                             </MessageContent>
@@ -138,7 +137,6 @@ export default function ChatBot({ videoId, className = '' }: ChatBotProps) {
             ))}
             {status === 'submitted' && <Loader />}
           </ConversationContent>
-          <ConversationScrollButton />
         </Conversation>
       </div>
 

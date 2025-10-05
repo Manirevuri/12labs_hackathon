@@ -3,7 +3,6 @@
 import {
   Conversation,
   ConversationContent,
-  ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
@@ -27,11 +26,6 @@ import {
   PromptInputToolbar,
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
-import {
-  Actions,
-  ActionsTrigger,
-  ActionsContent,
-} from '@/components/ai-elements/actions';
 import { useState, Fragment, useEffect } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { useSearchParams } from 'next/navigation';
@@ -105,8 +99,8 @@ export default function AgentPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 h-screen flex flex-col">
-      <div className="flex flex-col flex-1 min-h-0">
+    <div className="h-screen flex flex-col bg-gray-950">
+      <div className="max-w-4xl mx-auto w-full flex flex-col flex-1 min-h-0 p-6 pb-0">
         <div className="mb-6 flex-shrink-0">
           <h1 className="text-2xl font-bold text-white mb-4">Video Analysis Agent</h1>
           
@@ -131,9 +125,9 @@ export default function AgentPage() {
           </p>
         </div>
 
-        <div className="flex-1 flex flex-col min-h-0">
-          <Conversation className="flex-1 overflow-hidden">
-          <ConversationContent>
+        <div className="flex-1 flex flex-col min-h-0 mb-4">
+          <Conversation className="flex-1 min-h-0 overflow-hidden bg-gray-900 rounded-lg">
+          <ConversationContent className="p-4 h-full overflow-y-auto">
             {messages.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🤖</div>
@@ -194,24 +188,6 @@ export default function AgentPage() {
                               </Response>
                             </MessageContent>
                           </Message>
-                          {message.role === 'assistant' && i === message.parts.length - 1 && message.id === messages.at(-1)?.id && (
-                            <Actions className="mt-2">
-                              <Action
-                                onClick={() => regenerate()}
-                                label="Retry"
-                              >
-                                <RefreshCcwIcon className="size-3" />
-                              </Action>
-                              <Action
-                                onClick={() =>
-                                  navigator.clipboard.writeText(part.text)
-                                }
-                                label="Copy"
-                              >
-                                <CopyIcon className="size-3" />
-                              </Action>
-                            </Actions>
-                          )}
                         </Fragment>
                       );
                     case 'reasoning':
@@ -233,11 +209,14 @@ export default function AgentPage() {
             ))}
             {status === 'submitted' && <Loader />}
           </ConversationContent>
-            <ConversationScrollButton />
           </Conversation>
         </div>
 
-        <div className="mt-4 flex-shrink-0">
+      </div>
+      
+      {/* Fixed Input Area */}
+      <div className="max-w-4xl mx-auto w-full px-6 pb-6 bg-gray-950">
+        <div className="border-t border-gray-700 pt-4">
           <PromptInput onSubmit={handleSubmit} className="w-full" globalDrop multiple>
           <PromptInputBody>
             <PromptInputAttachments>

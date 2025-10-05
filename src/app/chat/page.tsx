@@ -41,7 +41,7 @@ export default function ChatPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [selectedVideo, setSelectedVideo] = useState<{url: string, startTime: number} | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<{url: string, startTime: number, endTime: number} | null>(null);
 
   const { loading, error, searchVideos } = useTwelveLabs();
 
@@ -125,8 +125,8 @@ export default function ChatPage() {
             type: 'default',
             position: { x, y },
             data: {
-              start: moment.start,
-              end: moment.end,
+              start: moment.start || 0,
+              end: moment.end || (moment.start + 10),
               score: moment.score,
               videoId: moment.metadata?.video_id,
               thumbnailUrl: moment.thumbnailUrl
@@ -136,9 +136,9 @@ export default function ChatPage() {
               color: 'white',
               border: '1px solid #9ca3af',
               borderRadius: '8px',
-              width: 100,
-              height: 60,
-              fontSize: '9px',
+              width: 140,
+              height: 70,
+              fontSize: '10px',
               cursor: 'pointer'
             }
           };
@@ -189,15 +189,17 @@ export default function ChatPage() {
       if (videoNode?.data.videoUrl) {
         setSelectedVideo({
           url: videoNode.data.videoUrl,
-          startTime: node.data.start || 0
+          startTime: node.data.start || 0,
+          endTime: node.data.end || node.data.start + 10 // Default to 10 seconds if no end time
         });
       }
     }
-    // If clicking a video node, play from the beginning
+    // If clicking a video node, play the full video
     else if (node.id.startsWith('video-') && node.data.videoUrl) {
       setSelectedVideo({
         url: node.data.videoUrl,
-        startTime: 0
+        startTime: 0,
+        endTime: Infinity // Play full video
       });
     }
   }, [nodes, edges]);
@@ -229,8 +231,19 @@ export default function ChatPage() {
                   autoPlay={selectedVideo?.url === data.videoUrl}
                   src={data.videoUrl}
                   onLoadedMetadata={(e) => {
+                    const video = e.target as HTMLVideoElement;
                     if (selectedVideo?.url === data.videoUrl && selectedVideo?.startTime) {
-                      (e.target as HTMLVideoElement).currentTime = selectedVideo.startTime;
+                      video.currentTime = selectedVideo.startTime;
+                    }
+                  }}
+                  onTimeUpdate={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    // Pause video when it reaches the end time of the selected segment
+                    if (selectedVideo?.url === data.videoUrl && 
+                        selectedVideo?.endTime !== Infinity && 
+                        video.currentTime >= selectedVideo.endTime) {
+                      video.pause();
+                      video.currentTime = selectedVideo.startTime; // Reset to start of segment
                     }
                   }}
                 />
@@ -253,23 +266,25 @@ export default function ChatPage() {
         return (
           <div className="relative group">
             {/* Subtle glow effect on hover */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-gray-500 rounded opacity-0 group-hover:opacity-50 blur transition duration-200" />
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg opacity-0 group-hover:opacity-50 blur transition duration-200" />
             
-            <div className="relative p-1 bg-gradient-to-br from-gray-500 to-gray-600 text-white rounded border border-gray-400 shadow-lg hover:shadow-xl hover:from-gray-600 hover:to-gray-700 transition-all cursor-pointer">
+            <div className="relative px-3 py-2 bg-gradient-to-br from-gray-500 to-gray-600 text-white rounded-lg border border-gray-400 shadow-lg hover:shadow-xl hover:from-gray-600 hover:to-gray-700 transition-all cursor-pointer">
               <Handle
                 type="target"
                 position={Position.Left}
                 style={{ background: '#6b7280', width: 10, height: 10 }}
               />
-              <div className="flex items-center gap-1 mb-1">
-                <Play className="h-2 w-2" />
-                <span className="text-xs font-medium">
-                  {formatTime(data.start)}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Star className="h-2 w-2 text-yellow-300" />
-                <span className="text-xs">{data.score.toFixed(0)}%</span>
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <Play className="h-3 w-3 flex-shrink-0" />
+                  <span className="text-xs font-medium whitespace-nowrap">
+                    {formatTime(data.start)} - {formatTime(data.end)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Star className="h-3 w-3 text-yellow-300 flex-shrink-0" />
+                  <span className="text-xs font-semibold">{data.score.toFixed(0)}% match</span>
+                </div>
               </div>
             </div>
           </div>

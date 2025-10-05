@@ -89,11 +89,11 @@ export default function ChatPage() {
           style: {
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             color: 'white',
-            border: '3px solid #4f46e5',
-            borderRadius: '16px',
-            width: 300,
-            height: 140,
-            fontSize: '14px',
+            border: '2px solid #4f46e5',
+            borderRadius: '12px',
+            width: 200,
+            height: 80,
+            fontSize: '11px',
             fontWeight: 'bold',
             zIndex: 10
           }
@@ -101,7 +101,7 @@ export default function ChatPage() {
         newNodes.push(videoNode);
 
         // Create individual embedding nodes in a circle around the video
-        const radius = 250;
+        const radius = 150;
         const angleStep = (2 * Math.PI) / moments.length;
         
         moments.forEach((moment, momentIndex) => {
@@ -124,11 +124,11 @@ export default function ChatPage() {
             style: {
               background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               color: 'white',
-              border: '2px solid #ec4899',
-              borderRadius: '12px',
-              width: 160,
-              height: 90,
-              fontSize: '12px'
+              border: '1px solid #ec4899',
+              borderRadius: '8px',
+              width: 100,
+              height: 60,
+              fontSize: '9px'
             }
           };
           newNodes.push(momentNode);
@@ -149,7 +149,7 @@ export default function ChatPage() {
           newEdges.push(edge);
         });
 
-        yOffset += videoSpacing + (moments.length > 6 ? 400 : 300);
+        yOffset += videoSpacing + (moments.length > 6 ? 250 : 200);
       });
 
       setNodes(newNodes);
@@ -171,40 +171,28 @@ export default function ChatPage() {
       
       if (isVideo) {
         return (
-          <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl border-2 border-blue-400 shadow-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Video className="h-5 w-5" />
-              <span className="font-bold text-sm truncate">{data.filename}</span>
+          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-lg border border-blue-400 shadow-md">
+            <div className="flex items-center gap-1 mb-1">
+              <Video className="h-3 w-3" />
+              <span className="font-bold text-xs truncate">{data.filename}</span>
             </div>
-            <div className="text-xs opacity-90 mb-2">
-              {data.totalResults} embeddings found
+            <div className="text-xs opacity-90">
+              {data.totalResults} clips
             </div>
-            {data.thumbnailUrl && (
-              <div className="w-20 h-12 bg-gray-200 rounded overflow-hidden">
-                <img 
-                  src={data.thumbnailUrl} 
-                  alt="Thumbnail" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
           </div>
         );
       } else {
         return (
-          <div className="p-3 bg-gradient-to-br from-pink-500 to-red-500 text-white rounded-lg border-2 border-pink-400 shadow-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <Play className="h-3 w-3" />
+          <div className="p-1 bg-gradient-to-br from-pink-500 to-red-500 text-white rounded border border-pink-400 shadow-sm">
+            <div className="flex items-center gap-1 mb-1">
+              <Play className="h-2 w-2" />
               <span className="text-xs font-medium">
-                {formatTime(data.start)} - {formatTime(data.end)}
+                {formatTime(data.start)}
               </span>
             </div>
-            <div className="flex items-center gap-1 mb-1">
-              <Star className="h-3 w-3 text-yellow-300" />
-              <span className="text-xs">{data.score.toFixed(1)}%</span>
-            </div>
-            <div className="text-xs opacity-75">
-              Embedding {data.start}s
+            <div className="flex items-center gap-1">
+              <Star className="h-2 w-2 text-yellow-300" />
+              <span className="text-xs">{data.score.toFixed(0)}%</span>
             </div>
           </div>
         );
@@ -215,67 +203,55 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
       <div className="h-screen flex flex-col">
-        {/* Header */}
-        <div className="p-6 bg-gray-800/80 backdrop-blur-xl border-b border-gray-700/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl shadow-lg">
-              <MessageCircle className="h-6 w-6 text-gray-300" />
+        {/* Compact Header */}
+        <div className="flex items-center justify-between p-4 bg-gray-800/80 backdrop-blur-xl border-b border-gray-700/50">
+          {/* Left: Title and Search */}
+          <div className="flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-gray-300" />
+              <h1 className="text-lg font-bold text-white">Video Search Flow</h1>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">
-                Video Search Flow
-              </h1>
-              <p className="text-gray-300">
-                Search videos and explore results as connected nodes
-              </p>
-            </div>
+            
+            {selectedIndex && (
+              <div className="flex items-center gap-3 flex-1 max-w-lg">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <input
+                    type="text"
+                    placeholder="Search for moments..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-100 placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all text-sm"
+                  />
+                </div>
+                <button
+                  onClick={handleSearch}
+                  disabled={loading || !searchQuery.trim() || !selectedIndex}
+                  className="px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {loading ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Index Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Select Index *
-            </label>
-            <div className="max-w-md">
+          {/* Right: Index Selection */}
+          <div className="flex items-center gap-3">
+            {searchResults.length > 0 && (
+              <div className="text-xs text-gray-400">
+                {searchResults.length} moments, {new Set(searchResults.map(r => r.metadata?.video_id)).size} videos
+              </div>
+            )}
+            <div className="w-64">
               <IndexSelector
                 selectedIndex={selectedIndex}
                 onIndexSelect={setSelectedIndex}
                 className="w-full"
-                placeholder="Choose an index to search..."
+                placeholder="Select index..."
               />
             </div>
           </div>
-
-          {/* Search Interface */}
-          {selectedIndex && (
-            <div className="flex gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search for moments in your videos..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-900/60 backdrop-blur-xl border border-gray-700/50 rounded-lg text-gray-100 placeholder-gray-500 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400/20 transition-all"
-                />
-              </div>
-              <button
-                onClick={handleSearch}
-                disabled={loading || !searchQuery.trim() || !selectedIndex}
-                className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Searching...' : 'Search'}
-              </button>
-            </div>
-          )}
-
-          {/* Results Summary */}
-          {searchResults.length > 0 && (
-            <div className="mt-4 text-sm text-gray-400">
-              Found {searchResults.length} moments across {new Set(searchResults.map(r => r.metadata?.video_id)).size} videos
-            </div>
-          )}
         </div>
 
         {/* Flow Canvas */}
@@ -288,7 +264,7 @@ export default function ChatPage() {
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             connectionMode={ConnectionMode.Loose}
-            fitView
+            defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
             className="bg-gray-900"
           >
             <Background color="#6366f1" gap={20} />

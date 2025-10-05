@@ -51,7 +51,9 @@ export async function POST(request: NextRequest) {
           filename: result.metadata?.filename || `Video ${result.video_id || result.videoId || 'unknown'}`,
           duration: (result.end || 0) - (result.start || 0),
           transcription: result.transcription,
-          confidence: result.confidence
+          confidence: result.confidence,
+          // Try to get video URL from result
+          video_url: result.video_url || result.metadata?.video_url || null
         },
         thumbnailUrl: result.thumbnail_url || result.thumbnailUrl,
       };

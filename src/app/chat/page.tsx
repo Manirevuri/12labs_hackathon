@@ -73,10 +73,19 @@ export default function ChatPage() {
       const newEdges: Edge[] = [];
       
       let yOffset = 0;
-      const videoSpacing = 400; // Increased spacing between video groups
+      const videoSpacing = 500; // Increased spacing for larger nodes
 
       Object.entries(groupedByVideo).forEach(([videoId, moments]) => {
         const randomVideoId = Math.random().toString(36).substring(7);
+        
+        // Define positioning variables first
+        const nodeHeight = 180; // Height of embedding nodes (50% larger)
+        const nodeSpacing = nodeHeight + 30; // Add 30px gap between nodes
+        const videoWidth = 570; // Width of video node (50% larger)
+        const videoX = 500; // Move video left to keep it in bounds
+        const gap = 120; // Gap between video and embedding nodes
+        const embeddingX = videoX + videoWidth + gap; // Position embeddings with gap from video
+        const startY = yOffset + 50; // Start above the video center
         
         // Create video root node (center)
         const videoNodeId = `video-${videoId}-${randomVideoId}`;
@@ -84,37 +93,28 @@ export default function ChatPage() {
         const videoNode = {
           id: videoNodeId,
           type: 'default',
-          position: { x: 400, y: yOffset + 150 },
+          position: { x: videoX, y: yOffset + 150 },
           data: {
             filename: moments[0]?.metadata?.filename || `Video ${videoId}`,
             videoId,
             totalResults: moments.length,
             thumbnailUrl: moments[0]?.thumbnailUrl,
-            // Store video URL for playback (using test video for now)
-            videoUrl: 'https://54hvaaxenz1kxrx4.public.blob.vercel-storage.com/test_video_2-p70ZLKG1LDfR54791Ztjse507CGwug.mp4'
+            // Use actual video URL if available, otherwise use test video
+            videoUrl: moments[0]?.metadata?.video_url || 'https://54hvaaxenz1kxrx4.public.blob.vercel-storage.com/test_video_2-p70ZLKG1LDfR54791Ztjse507CGwug.mp4'
           },
           style: {
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            background: 'transparent',
             color: 'white',
-            border: '2px solid #4f46e5',
+            border: 'none',
             borderRadius: '12px',
-            width: 320,
-            height: 240,
+            width: 570,
+            height: 420,
             fontSize: '11px',
             fontWeight: 'bold',
             zIndex: 10
           }
         };
         newNodes.push(videoNode);
-
-        // Create individual embedding nodes in a vertical column to the right of the video
-        const nodeHeight = 120; // Height of embedding nodes
-        const nodeSpacing = nodeHeight + 20; // Add 20px gap between nodes
-        const videoWidth = 320;
-        const videoX = 400;
-        const gap = 100; // Gap between video and embedding nodes
-        const embeddingX = videoX + videoWidth + gap; // Position embeddings with gap from video
-        const startY = yOffset + 50; // Start above the video center
         
         moments.forEach((moment, momentIndex) => {
           const randomMomentId = Math.random().toString(36).substring(7);
@@ -124,7 +124,7 @@ export default function ChatPage() {
           const momentNode = {
             id: `moment-${moment.id}-${randomMomentId}`,
             type: 'default',
-            position: { x, y },
+            position: { x , y },
             data: {
               start: moment.start || 0,
               end: moment.end || (moment.start + 10),
@@ -133,13 +133,13 @@ export default function ChatPage() {
               thumbnailUrl: moment.thumbnailUrl
             },
             style: {
-              background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+              background: 'transparent',
               color: 'white',
               border: '1px solid #9ca3af',
               borderRadius: '8px',
-              width: 180,
-              height: 120,
-              fontSize: '10px',
+              width: 270,
+              height: 180,
+              fontSize: '12px',
               cursor: 'pointer'
             }
           };
@@ -214,17 +214,12 @@ export default function ChatPage() {
       
       if (isVideo) {
         return (
-          <div className="relative rounded-lg shadow-2xl" style={{ width: 320, height: 240 }}>
-            {/* Backdrop/overlay effect */}
-            <div className="absolute inset-0 bg-black/20 rounded-lg backdrop-blur-sm -z-10" style={{ padding: '4px' }}>
-              <div className="w-full h-full bg-gradient-to-br from-blue-500/30 to-purple-600/30 rounded-lg" />
-            </div>
-            
-            <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-lg border-2 border-blue-400 shadow-md overflow-hidden w-full h-full">
+          <div className="relative rounded-lg shadow-2xl" style={{ width: 570, height: 420 }}>
+            <div className="relative bg-gray-900 text-white rounded-lg border border-gray-700 shadow-xl overflow-hidden w-full h-full">
               <Handle
                 type="source"
                 position={Position.Right}
-                style={{ background: '#6366f1', width: 12, height: 12 }}
+                style={{ background: '#6b7280', width: 12, height: 12 }}
               />
               {data.videoUrl ? (
                 <video
@@ -271,7 +266,7 @@ export default function ChatPage() {
             {/* Subtle glow effect on hover */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-600 to-gray-500 rounded-lg opacity-0 group-hover:opacity-50 blur transition duration-200" />
             
-            <div className="relative bg-gradient-to-br from-gray-500 to-gray-600 text-white rounded-lg border border-gray-400 shadow-lg hover:shadow-xl hover:from-gray-600 hover:to-gray-700 transition-all cursor-pointer overflow-hidden" style={{ width: 180, height: 120 }}>
+            <div className="relative bg-transparent text-white rounded-lg border border-gray-400 shadow-lg hover:shadow-xl transition-all cursor-pointer overflow-hidden" style={{ width: 270, height: 180 }}>
               <Handle
                 type="target"
                 position={Position.Left}
@@ -283,24 +278,24 @@ export default function ChatPage() {
                 <img 
                   src={data.thumbnailUrl} 
                   alt="Moment thumbnail"
-                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                  className="absolute inset-0 w-full h-full object-cover rounded-lg"
                 />
               )}
               
               {/* Content overlay */}
-              <div className="relative h-full flex flex-col justify-between p-2 bg-gradient-to-b from-transparent via-gray-900/50 to-gray-900/80">
+              <div className="absolute inset-0 h-full flex flex-col justify-between p-2 z-10">
                 {/* Top section with time */}
-                <div className="flex items-center gap-1.5 bg-gray-900/70 rounded px-2 py-1 backdrop-blur-sm">
-                  <Play className="h-3 w-3 flex-shrink-0" />
-                  <span className="text-xs font-medium whitespace-nowrap">
+                <div className="flex items-center gap-2 bg-gray-900/80 rounded-md px-2 py-1 backdrop-blur-sm self-start">
+                  <Play className="h-3 w-3 flex-shrink-0 text-white" />
+                  <span className="text-xs font-medium whitespace-nowrap text-white">
                     {formatTime(data.start)} - {formatTime(data.end)}
                   </span>
                 </div>
                 
                 {/* Bottom section with score */}
-                <div className="flex items-center gap-1.5 bg-gray-900/70 rounded px-2 py-1 backdrop-blur-sm">
+                <div className="flex items-center gap-2 bg-gray-900/80 rounded-md px-2 py-1 backdrop-blur-sm self-start">
                   <Star className="h-3 w-3 text-yellow-300 flex-shrink-0" />
-                  <span className="text-xs font-semibold">{data.score.toFixed(0)}% match</span>
+                  <span className="text-xs font-semibold text-white">{data.score.toFixed(0)}% match</span>
                 </div>
               </div>
             </div>

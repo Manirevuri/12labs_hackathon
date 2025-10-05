@@ -79,6 +79,14 @@ export async function POST(request: NextRequest) {
         access: 'public',
       });
       console.log('Blob upload successful:', blobResult.url);
+      
+      // Verify the blob is accessible
+      try {
+        const response = await fetch(blobResult.url, { method: 'HEAD' });
+        console.log('Blob URL accessibility check:', response.status, response.statusText);
+      } catch (checkError) {
+        console.warn('Could not verify blob URL accessibility:', checkError);
+      }
     } catch (blobError: any) {
       console.error('Initial blob upload failed:', blobError?.message);
       
@@ -91,6 +99,14 @@ export async function POST(request: NextRequest) {
             addRandomSuffix: true,
           });
           console.log('Blob upload successful with unique name:', blobResult.url);
+          
+          // Verify the blob is accessible
+          try {
+            const response = await fetch(blobResult.url, { method: 'HEAD' });
+            console.log('Blob URL accessibility check (retry):', response.status, response.statusText);
+          } catch (checkError) {
+            console.warn('Could not verify blob URL accessibility (retry):', checkError);
+          }
         } catch (retryError: any) {
           console.error('Retry blob upload failed:', retryError);
           throw new Error(`Failed to upload video to storage: ${retryError?.message}`);
@@ -125,6 +141,18 @@ export async function POST(request: NextRequest) {
     } catch (redisError) {
       console.error('Failed to store task mapping in Redis:', redisError);
       // Continue even if Redis fails - not critical
+    }
+
+    // Step 4: If task has videoId immediately, store video URL mapping right away
+    if (task.videoId) {
+      console.log('Task has videoId immediately, storing video URL mapping...');
+      try {
+        const { storeVideoUrl } = await import('@/lib/redis');
+        await storeVideoUrl(task.videoId, blobResult.url);
+        console.log(`Immediately stored video URL for video ID: ${task.videoId}`);
+      } catch (redisError) {
+        console.error('Failed to immediately store video URL:', redisError);
+      }
     }
 
     return NextResponse.json({
@@ -166,18 +194,21 @@ export async function GET(request: NextRequest) {
     }
 
     const task = await twelveLabsClient.tasks.retrieve(taskId);
+    console.log(`Task status check - ID: ${taskId}, Status: ${task.status}, VideoID: ${task.videoId}`);
 
     // If task is ready and has a video ID, store the video ID to URL mapping and generate thumbnails
     if (task.status === 'ready' && task.videoId) {
+      console.log(`Task is ready! Storing video URL mapping for videoId: ${task.videoId}`);
       const { getTaskMapping, storeVideoUrl, getTaskIndexId } = await import('@/lib/redis');
       
       // Get the video URL from the task mapping
       const videoUrl = await getTaskMapping(taskId);
+      console.log(`Retrieved video URL from task mapping: ${videoUrl}`);
       
       if (videoUrl) {
         // Store video ID to URL mapping
-        await storeVideoUrl(task.videoId, videoUrl);
-        console.log(`Stored video URL for video ID: ${task.videoId}`);
+        const stored = await storeVideoUrl(task.videoId, videoUrl);
+        console.log(`Video URL storage result: ${stored ? 'SUCCESS' : 'FAILED'} for video ID: ${task.videoId}`);
         
         // Trigger thumbnail generation in the background
         try {

@@ -59,9 +59,6 @@ export default function RootLayout({
                   <a href="/search" className="text-gray-300 hover:text-white transition-colors font-medium text-sm">
                     Search
                   </a>
-                  <a href="/chat" className="text-gray-300 hover:text-white transition-colors font-medium text-sm">
-                    Chat
-                  </a>
                   
                 </nav>
               </div>

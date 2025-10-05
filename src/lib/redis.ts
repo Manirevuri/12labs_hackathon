@@ -28,9 +28,22 @@ export { redisClient };
 // Helper functions for video URL storage
 export async function storeVideoUrl(videoId: string, videoUrl: string) {
   try {
+    console.log(`Attempting to store video URL for key: video:${videoId} -> ${videoUrl}`);
+    
+    // Check if Redis is connected
+    if (!redisClient.isOpen) {
+      console.error('Redis client is not connected');
+      return false;
+    }
+    
     // Store with expiration of 30 days
     await redisClient.setEx(`video:${videoId}`, 30 * 24 * 60 * 60, videoUrl);
-    console.log(`Stored video URL for ID: ${videoId}`);
+    console.log(`Successfully stored video URL for ID: ${videoId}`);
+    
+    // Verify it was stored
+    const storedUrl = await redisClient.get(`video:${videoId}`);
+    console.log(`Verification - stored URL: ${storedUrl}`);
+    
     return true;
   } catch (error) {
     console.error('Error storing video URL:', error);
@@ -40,7 +53,20 @@ export async function storeVideoUrl(videoId: string, videoUrl: string) {
 
 export async function getVideoUrl(videoId: string): Promise<string | null> {
   try {
+    console.log(`Attempting to get video URL for key: video:${videoId}`);
+    
+    // Check if Redis is connected
+    if (!redisClient.isOpen) {
+      console.error('Redis client is not connected');
+      return null;
+    }
+    
+    // First, let's see what video keys exist
+    const allVideoKeys = await redisClient.keys('video:*');
+    console.log(`All video keys in Redis: ${JSON.stringify(allVideoKeys)}`);
+    
     const url = await redisClient.get(`video:${videoId}`);
+    console.log(`Redis response for video:${videoId}: ${url}`);
     return url;
   } catch (error) {
     console.error('Error getting video URL:', error);

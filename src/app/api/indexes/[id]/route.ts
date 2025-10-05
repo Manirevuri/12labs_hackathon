@@ -3,10 +3,10 @@ import { twelveLabsClient } from '@/lib/twelvelabs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const indexId = params.id;
+    const { id: indexId } = await params;
     if (!indexId) {
       return NextResponse.json(
         { error: 'Index ID is required' },
@@ -45,10 +45,10 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const indexId = params.id;
+    const { id: indexId } = await params;
     if (!indexId) {
       return NextResponse.json(
         { error: 'Index ID is required' },

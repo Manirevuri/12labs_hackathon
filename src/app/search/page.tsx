@@ -100,8 +100,8 @@ export default function ChatPage() {
             videoId,
             totalResults: moments.length,
             thumbnailUrl: moments[0]?.thumbnailUrl,
-            // Use actual video URL if available, otherwise use test video
-            videoUrl: moments[0]?.metadata?.video_url || 'https://54hvaaxenz1kxrx4.public.blob.vercel-storage.com/test_video_2-p70ZLKG1LDfR54791Ztjse507CGwug.mp4'
+            // Use actual video URL if available
+            videoUrl: moments[0]?.metadata?.video_url
           },
           style: {
             background: 'transparent',

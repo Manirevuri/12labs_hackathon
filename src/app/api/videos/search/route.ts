@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
       try {
         videoUrl = await getVideoUrl(videoId);
         if (videoUrl) {
-          console.log(`Found video URL in Redis for video ID: ${videoId}`);
+          console.log(`Found video URL in Redis for video ID: ${videoId} -> ${videoUrl}`);
+        } else {
+          console.log(`No video URL found in Redis for video ID: ${videoId}`);
         }
       } catch (error) {
         console.error(`Failed to get video URL from Redis for video ID: ${videoId}`, error);
@@ -81,6 +83,9 @@ export async function POST(request: NextRequest) {
       const thumbnailUrl = generateThumbnailUrl(videoId, startTime);
       
       // Use safe property access with defaults
+      const finalVideoUrl = videoUrl || result.video_url || result.metadata?.video_url || null;
+      console.log(`Final video URL for ${videoId}: ${finalVideoUrl}`);
+      
       return {
         id: result.id || videoId || Math.random().toString(36).substring(7),
         score: result.score || 0,
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
           transcription: result.transcription,
           confidence: result.confidence,
           // Use video URL from Redis if available, otherwise fallback to result
-          video_url: videoUrl || result.video_url || result.metadata?.video_url || null
+          video_url: finalVideoUrl
         },
         // Use generated thumbnail URL instead of the one from TwelveLabs
         thumbnailUrl: thumbnailUrl,

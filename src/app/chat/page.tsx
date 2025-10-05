@@ -108,7 +108,8 @@ export default function ChatPage() {
         newNodes.push(videoNode);
 
         // Create individual embedding nodes in a vertical column to the right of the video
-        const nodeSpacing = 80; // Vertical spacing between moment nodes
+        const nodeHeight = 120; // Height of embedding nodes
+        const nodeSpacing = nodeHeight + 20; // Add 20px gap between nodes
         const videoWidth = 320;
         const videoX = 400;
         const gap = 100; // Gap between video and embedding nodes
@@ -162,8 +163,8 @@ export default function ChatPage() {
         });
 
         // Calculate spacing based on number of moment nodes in vertical layout
-        const momentHeight = moments.length * 80; // nodeSpacing * number of moments
-        yOffset += Math.max(videoSpacing, momentHeight + 100); // Ensure enough space for all moments
+        const totalMomentHeight = moments.length * nodeSpacing; // Total height of all moment nodes
+        yOffset += Math.max(videoSpacing, totalMomentHeight + 100); // Ensure enough space for all moments
       });
 
       console.log('Setting nodes:', newNodes.length, 'nodes');

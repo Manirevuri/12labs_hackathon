@@ -41,7 +41,7 @@ export default function ChatPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const [selectedVideo, setSelectedVideo] = useState<{url: string, startTime: number, endTime: number} | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<{nodeId: string, url: string, startTime: number, endTime: number} | null>(null);
 
   const { loading, error, searchVideos } = useTwelveLabs();
 
@@ -188,6 +188,7 @@ export default function ChatPage() {
       
       if (videoNode?.data.videoUrl) {
         setSelectedVideo({
+          nodeId: videoNode.id, // Use the specific video node ID
           url: videoNode.data.videoUrl,
           startTime: node.data.start || 0,
           endTime: node.data.end || node.data.start + 10 // Default to 10 seconds if no end time
@@ -197,6 +198,7 @@ export default function ChatPage() {
     // If clicking a video node, play the full video
     else if (node.id.startsWith('video-') && node.data.videoUrl) {
       setSelectedVideo({
+        nodeId: node.id, // Use the specific video node ID
         url: node.data.videoUrl,
         startTime: 0,
         endTime: Infinity // Play full video
@@ -225,21 +227,21 @@ export default function ChatPage() {
               />
               {data.videoUrl ? (
                 <video
-                  key={`${data.videoUrl}-${selectedVideo?.startTime || 0}`}
+                  key={`${id}-${selectedVideo?.startTime || 0}`}
                   className="w-full h-full object-cover"
                   controls
-                  autoPlay={selectedVideo?.url === data.videoUrl}
+                  autoPlay={selectedVideo?.nodeId === id}
                   src={data.videoUrl}
                   onLoadedMetadata={(e) => {
                     const video = e.target as HTMLVideoElement;
-                    if (selectedVideo?.url === data.videoUrl && selectedVideo?.startTime) {
+                    if (selectedVideo?.nodeId === id && selectedVideo?.startTime) {
                       video.currentTime = selectedVideo.startTime;
                     }
                   }}
                   onTimeUpdate={(e) => {
                     const video = e.target as HTMLVideoElement;
                     // Pause video when it reaches the end time of the selected segment
-                    if (selectedVideo?.url === data.videoUrl && 
+                    if (selectedVideo?.nodeId === id && 
                         selectedVideo?.endTime !== Infinity && 
                         video.currentTime >= selectedVideo.endTime) {
                       video.pause();

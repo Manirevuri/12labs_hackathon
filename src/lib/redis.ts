@@ -48,10 +48,16 @@ export async function getVideoUrl(videoId: string): Promise<string | null> {
   }
 }
 
-export async function storeTaskMapping(taskId: string, videoUrl: string) {
+export async function storeTaskMapping(taskId: string, videoUrl: string, indexId?: string) {
   try {
-    // Store with expiration of 1 day for task mappings
+    // Store video URL
     await redisClient.setEx(`task:${taskId}`, 24 * 60 * 60, videoUrl);
+    
+    // Store index ID if provided
+    if (indexId) {
+      await redisClient.setEx(`task:${taskId}:index`, 24 * 60 * 60, indexId);
+    }
+    
     console.log(`Stored task mapping for ID: ${taskId}`);
     return true;
   } catch (error) {
@@ -66,6 +72,16 @@ export async function getTaskMapping(taskId: string): Promise<string | null> {
     return url;
   } catch (error) {
     console.error('Error getting task mapping:', error);
+    return null;
+  }
+}
+
+export async function getTaskIndexId(taskId: string): Promise<string | null> {
+  try {
+    const indexId = await redisClient.get(`task:${taskId}:index`);
+    return indexId;
+  } catch (error) {
+    console.error('Error getting task index ID:', error);
     return null;
   }
 }

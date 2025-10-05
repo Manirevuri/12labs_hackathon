@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { twelveLabsClient } from '@/lib/twelvelabs';
 import * as blob from '@vercel/blob';
 import { storeTaskMapping, isUserIndexOwner } from '@/lib/redis';
+import { generateVideoThumbnails } from '@/lib/thumbnail-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -114,12 +115,12 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to create TwelveLabs processing task: ${taskError?.message}`);
     }
 
-    // Step 3: Store task ID to video URL mapping in Redis
+    // Step 3: Store task ID to video URL mapping in Redis (with index ID)
     console.log('Storing task mapping in Redis...');
     try {
       if (task.id) {
-        await storeTaskMapping(task.id, blobResult.url);
-        console.log('Task mapping stored successfully');
+        await storeTaskMapping(task.id, blobResult.url, indexId);
+        console.log('Task mapping stored successfully with index ID');
       }
     } catch (redisError) {
       console.error('Failed to store task mapping in Redis:', redisError);
@@ -166,9 +167,9 @@ export async function GET(request: NextRequest) {
 
     const task = await twelveLabsClient.tasks.retrieve(taskId);
 
-    // If task is ready and has a video ID, store the video ID to URL mapping
+    // If task is ready and has a video ID, store the video ID to URL mapping and generate thumbnails
     if (task.status === 'ready' && task.videoId) {
-      const { getTaskMapping, storeVideoUrl } = await import('@/lib/redis');
+      const { getTaskMapping, storeVideoUrl, getTaskIndexId } = await import('@/lib/redis');
       
       // Get the video URL from the task mapping
       const videoUrl = await getTaskMapping(taskId);
@@ -177,6 +178,39 @@ export async function GET(request: NextRequest) {
         // Store video ID to URL mapping
         await storeVideoUrl(task.videoId, videoUrl);
         console.log(`Stored video URL for video ID: ${task.videoId}`);
+        
+        // Trigger thumbnail generation in the background
+        try {
+          // Get the index ID from Redis (stored when task was created)
+          const indexId = await getTaskIndexId(taskId);
+          
+          if (indexId) {
+            // Trigger thumbnail generation (fire and forget)
+            fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/videos/process-thumbnails`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                taskId,
+                videoId: task.videoId,
+                indexId
+              })
+            }).then(response => {
+              if (response.ok) {
+                console.log(`Thumbnail generation triggered for video ${task.videoId}`);
+              } else {
+                console.error('Failed to trigger thumbnail generation');
+              }
+            }).catch(error => {
+              console.error('Error triggering thumbnail generation:', error);
+            });
+          } else {
+            console.log('Index ID not found for task, skipping thumbnail generation');
+          }
+        } catch (error) {
+          console.error('Error in thumbnail generation setup:', error);
+        }
       }
     }
 

@@ -445,9 +445,12 @@ export default function DashboardPage() {
               {searchTerm ? 'No videos match your search.' : 'Upload some videos to get started.'}
             </p>
             {!searchTerm && (
-              <button className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl">
+              <Link 
+                href="/upload"
+                className="inline-block px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-lg font-medium hover:from-gray-800 hover:to-black transition-all shadow-lg hover:shadow-xl"
+              >
                 Upload Videos
-              </button>
+              </Link>
             )}
           </div>
         )}
